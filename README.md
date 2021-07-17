@@ -1,0 +1,1 @@
+# Simple Wireguard web dashboard
