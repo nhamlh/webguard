@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 
 	"github.com/nhamlh/wg-dash/pkg/db"
@@ -13,19 +12,13 @@ func voidHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.ParseFS(staticAssets, "static/templates/index.tpl"))
-	t.Execute(w, nil)
+	renderTemplate("index.tpl", nil, w)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.ParseFS(staticAssets, "static/templates/login.tpl"))
-
 	switch r.Method {
 	case http.MethodGet:
-		err := t.Execute(w, nil)
-		if err != nil {
-			w.Write([]byte(fmt.Sprintf("Error reading login.tpl", err.Error())))
-		}
+		renderTemplate("login.tpl", templateData{Errors: []string{"Invalid email or password"}}, w)
 	case http.MethodPost:
 		// already logged
 		requestSession, found := sessionStore.Get(*r)
@@ -42,20 +35,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		if user == (db.User{}) || password != user.Password.String {
 			w.WriteHeader(403)
-			t.Execute(w, templateData{Errors: []string{"Invalid email or password"}})
+			renderTemplate("login.tpl", templateData{Errors: []string{"Invalid email or password"}}, w)
 		}
 
 		session, err := sessionStore.New()
 		if err != nil {
 			w.WriteHeader(500)
-			t.Execute(w, templateData{Errors: []string{"Internal error", err.Error()}})
+			renderTemplate("login.tpl", templateData{Errors: []string{"Internal error"}}, w)
 		}
 		session.Value = email
 
 		cookie, err := sessionStore.Marshal(session)
 		if err != nil {
 			w.WriteHeader(500)
-			t.Execute(w, templateData{Errors: []string{"Internal error", err.Error()}})
+			renderTemplate("login.tpl", templateData{Errors: []string{"Internal error"}}, w)
 		}
 
 		http.SetCookie(w, &cookie)
