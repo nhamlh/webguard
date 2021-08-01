@@ -29,7 +29,7 @@ func MigrateSchema() {
 	// Seeding
 	DB.MustExec(`INSERT
 INTO users(email,password,is_admin,auth_type)
-values("nham", "abc", 1, 0)
+values("nham", "$2a$14$VxNB2aRwQj0eueo.1g25YOtnga/9AmSxAeHX5hnXpdDszat1COob2", 1, 0)
 ON CONFLICT DO NOTHING
 `)
 

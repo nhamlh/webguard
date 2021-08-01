@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func voidHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,10 +31,18 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
+
 		var user db.User
 		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
 
-		if user == (db.User{}) || password != user.Password.String {
+		err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
+
+		samePassword := false
+		if err != nil {
+			samePassword = false
+		}
+
+		if user == (db.User{}) || samePassword {
 			w.WriteHeader(403)
 			renderTemplate("login", templateData{Errors: []string{"Invalid email or password"}}, w)
 		}
@@ -65,8 +74,6 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		if found {
 			sessionStore.Delete(session.Id)
 		}
-
-		// sessionStore.Print()
 
 		http.Redirect(w, r, r.Referer(), 302)
 	default:
