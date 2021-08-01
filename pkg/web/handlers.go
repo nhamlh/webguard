@@ -12,13 +12,13 @@ func voidHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate("index.tpl", nil, w)
+	renderTemplate("index", nil, w)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		renderTemplate("login.tpl", templateData{Errors: []string{"Invalid email or password"}}, w)
+		renderTemplate("login", templateData{Errors: []string{"Invalid email or password"}}, w)
 	case http.MethodPost:
 		// already logged
 		requestSession, found := sessionStore.Get(*r)
@@ -35,20 +35,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		if user == (db.User{}) || password != user.Password.String {
 			w.WriteHeader(403)
-			renderTemplate("login.tpl", templateData{Errors: []string{"Invalid email or password"}}, w)
+			renderTemplate("login", templateData{Errors: []string{"Invalid email or password"}}, w)
 		}
 
 		session, err := sessionStore.New()
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login.tpl", templateData{Errors: []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{Errors: []string{"Internal error"}}, w)
 		}
 		session.Value = email
 
 		cookie, err := sessionStore.Marshal(session)
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login.tpl", templateData{Errors: []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{Errors: []string{"Internal error"}}, w)
 		}
 
 		http.SetCookie(w, &cookie)
@@ -66,7 +66,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 			sessionStore.Delete(session.Id)
 		}
 
-		sessionStore.Print()
+		// sessionStore.Print()
 
 		http.Redirect(w, r, r.Referer(), 302)
 	default:

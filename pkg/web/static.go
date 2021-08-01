@@ -17,11 +17,13 @@ type templateData struct {
 	Errors []string
 }
 
-// renderTemplate renders `file` inside `templatePath`
-func renderTemplate(file string, data interface{}, w http.ResponseWriter) {
-	t := template.Must(template.ParseFS(staticAssets, filepath.Join(templatePath, file)))
-	err := t.Execute(w, data)
+// renderTemplate renders `name`.tpl inside `templatePath`
+func renderTemplate(name string, data interface{}, w http.ResponseWriter) {
+	files := []string{filepath.Join(templatePath, "*.tpl"), filepath.Join(templatePath, `partials/*.tpl`)}
+
+	t := template.Must(template.ParseFS(staticAssets, files...))
+	err := t.ExecuteTemplate(w, name + ".tpl", data)
 	if err != nil {
-		w.Write([]byte(fmt.Sprintf("Error reading %s: %s", file, err.Error())))
+		w.Write([]byte(fmt.Sprintf("Error rendering %s: %s", name, err.Error())))
 	}
 }

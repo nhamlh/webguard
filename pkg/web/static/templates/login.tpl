@@ -1,5 +1,5 @@
 <html>
-  <title>Simple Wireguard dashboard</title>
+  {{ template "header" }}
   <body>
     {{ range $.Errors }}
     <div>{{ . }}</div>>
