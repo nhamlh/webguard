@@ -5,7 +5,7 @@
     <br>
 
     {{ range $.devices }}
-      <div>{{ .name }}: {{ .key }}</div>
+      <div>{{ .Name }}: {{ .AllowedIps }}</div>
     {{ end }}
 
   </body>

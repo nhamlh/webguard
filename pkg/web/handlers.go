@@ -13,13 +13,18 @@ func voidHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// doesn't need further check. LoginManager already
+	// check for validity of session
+	session, _ := sessionStore.Get(*r)
 
-	// TODO get real data
+	var user db.User
+	db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
+
+	var devices []db.Device
+	db.DB.Select(&devices, "SELECT * FROM devices WHERE user_id=$1", user.Id)
+
 	data := templateData{
-		"devices": []map[string]interface{}{
-			{"name": "foo", "key": "bar"},
-			{"name": "bar", "key": "foo"},
-		},
+		"devices": devices,
 	}
 	renderTemplate("index", data, w)
 }

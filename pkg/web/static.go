@@ -25,4 +25,3 @@ func renderTemplate(name string, data templateData, w http.ResponseWriter) {
 		w.Write([]byte(fmt.Sprintf("Error rendering %s: %s", name, err.Error())))
 	}
 }
-

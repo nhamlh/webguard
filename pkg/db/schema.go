@@ -11,7 +11,17 @@ CREATE TABLE IF NOT EXISTS users (
 	password TEXT,
 	is_admin TEXT NOT NULL,
 	auth_type TEXT NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS devices (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NOT NULL,
+	name TEXT NOT NULL UNIQUE,
+	private_key TEXT NOT NULL,
+	allowed_ips TEXT NOT NULL,
+
+	FOREIGN KEY(user_id) REFERENCES users(id)
+);
 `
 
 const (
@@ -27,34 +37,10 @@ type User struct {
 	IsAmdin  bool           `db:"is_admin"`
 }
 
-// func (p *Profile) AddDevice(d Device) error {
-// 	append(d, p.Devices)
-// 	return nil
-// }
-
-// func (p *Profile) DeleteDevice(id string) error {
-// 	for d := range p.Devices {
-// 		if d.Id == id {
-// 			delete(d, p.Devices)
-// 		}
-// 	}
-// 	return nil
-// }
-
-const (
-	LinuxDevice = iota
-	MacDevice
-	WindowsDevice
-	AndroidDevice
-	IosDevice
-)
-
-type DeviceType int
-
 type Device struct {
-	Id         int
-	Name       string
-	PrivateKey string
-	Type       DeviceType
-	AllowedIps string
+	Id         int    `db:"id"`
+	UserId     int    `db:"user_id"`
+	Name       string `db:"name"`
+	PrivateKey string `db:"private_key"`
+	AllowedIps string `db:"allowed_ips"`
 }
