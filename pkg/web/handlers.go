@@ -30,19 +30,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
+	// already logged
+	requestSession, found := sessionStore.Get(*r)
+	if found && ! requestSession.IsExpired() {
+		http.Redirect(w, r, "/", 301)
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		renderTemplate("login", nil, w)
 	case http.MethodPost:
-		// already logged
-		requestSession, found := sessionStore.Get(*r)
-		if found && ! requestSession.IsExpired() {
-			http.Redirect(w, r, "/", 301)
-		}
-
 		email := r.FormValue("email")
 		password := r.FormValue("password")
-
 
 		var user db.User
 		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
