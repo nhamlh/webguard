@@ -13,12 +13,10 @@ var staticAssets embed.FS
 
 const templatePath = "static/templates"
 
-type templateData struct {
-	Errors []string
-}
+type templateData map[string]interface{}
 
 // renderTemplate renders `name`.tpl inside `templatePath`
-func renderTemplate(name string, data interface{}, w http.ResponseWriter) {
+func renderTemplate(name string, data templateData, w http.ResponseWriter) {
 	files := []string{filepath.Join(templatePath, "*.tpl"), filepath.Join(templatePath, `partials/*.tpl`)}
 
 	t := template.Must(template.ParseFS(staticAssets, files...))
@@ -27,3 +25,4 @@ func renderTemplate(name string, data interface{}, w http.ResponseWriter) {
 		w.Write([]byte(fmt.Sprintf("Error rendering %s: %s", name, err.Error())))
 	}
 }
+

@@ -1,6 +1,12 @@
 <html>
   {{ template "header" }}
   <body>
-    <div>Simply works</div>>
+    <div>My devices</div>
+    <br>
+
+    {{ range $.devices }}
+      <div>{{ .name }}: {{ .key }}</div>
+    {{ end }}
+
   </body>
 </html>

@@ -13,19 +13,26 @@ func voidHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate("index", nil, w)
+
+	// TODO get real data
+	data := templateData{
+		"devices": []map[string]interface{}{
+			{"name": "foo", "key": "bar"},
+			{"name": "bar", "key": "foo"},
+		},
+	}
+	renderTemplate("index", data, w)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		renderTemplate("login", templateData{Errors: []string{"Invalid email or password"}}, w)
+		renderTemplate("login", nil, w)
 	case http.MethodPost:
 		// already logged
 		requestSession, found := sessionStore.Get(*r)
 		if found && ! requestSession.IsExpired() {
 			http.Redirect(w, r, "/", 301)
-
 		}
 
 		email := r.FormValue("email")
@@ -37,27 +44,27 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
 
-		samePassword := false
+		samePassword := true
 		if err != nil {
 			samePassword = false
 		}
 
-		if user == (db.User{}) || samePassword {
+		if user == (db.User{}) || ! samePassword {
 			w.WriteHeader(403)
-			renderTemplate("login", templateData{Errors: []string{"Invalid email or password"}}, w)
+			renderTemplate("login", templateData{"errors": []string{"Invalid email or password"}}, w)
 		}
 
 		session, err := sessionStore.New()
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login", templateData{Errors: []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
 		}
 		session.Value = email
 
 		cookie, err := sessionStore.Marshal(session)
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login", templateData{Errors: []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
 		}
 
 		http.SetCookie(w, &cookie)

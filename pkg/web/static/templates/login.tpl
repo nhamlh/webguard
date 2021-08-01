@@ -1,9 +1,10 @@
 <html>
   {{ template "header" }}
   <body>
-    {{ range $.Errors }}
-    <div>{{ . }}</div>>
+    {{ range $.errors }}
+    <div>{{ . }}</div>
     {{ end }}
+    <br>
     <div class="login-tite">Login:</div>
     <div class="login-form">
       <form action="/login" method="POST">
