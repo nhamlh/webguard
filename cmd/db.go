@@ -1,14 +1,18 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/spf13/cobra"
+	"log"
 )
 
 func newDbCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use: "db",
+		Use:   "db",
 		Short: "Database related operations",
 	}
 
@@ -19,10 +23,20 @@ func newDbCmd() *cobra.Command {
 
 func newDBMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "migrate",
+		Use:   "migrate",
 		Short: "Migrate database schema",
 		Run: func(cmd *cobra.Command, args []string) {
-			db.MigrateSchema()
+			driver, err := sqlite3.WithInstance(db.DB.DB, &sqlite3.Config{})
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			m, err := migrate.NewWithDatabaseInstance("file://db/migrations", "sqlite3", driver)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			m.Steps(2)
 		},
 	}
 
