@@ -1,13 +1,10 @@
 package web
 
 import (
-	"fmt"
 	"github.com/go-chi/chi"
-	"net/http"
-	"time"
 )
 
-func StartServer() {
+func NewRouter() *chi.Mux {
 	router := chi.NewRouter()
 
 	lm := loginManager{
@@ -37,14 +34,5 @@ func StartServer() {
 		})
 	})
 
-	srv := &http.Server{
-		Handler: router,
-		Addr:    "127.0.0.1:8000",
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	fmt.Println("Starting server")
-	srv.ListenAndServe()
+	return router
 }
