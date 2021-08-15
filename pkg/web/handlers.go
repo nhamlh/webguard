@@ -32,7 +32,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	// already logged
 	requestSession, found := sessionStore.Get(*r)
-	if found && ! requestSession.IsExpired() {
+	if found && !requestSession.IsExpired() {
 		http.Redirect(w, r, "/", 301)
 	}
 
@@ -53,15 +53,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			samePassword = false
 		}
 
-		if user == (db.User{}) || ! samePassword {
+		if user == (db.User{}) || !samePassword {
 			w.WriteHeader(403)
 			renderTemplate("login", templateData{"errors": []string{"Invalid email or password"}}, w)
+			return
 		}
 
 		session, err := sessionStore.New()
 		if err != nil {
 			w.WriteHeader(500)
 			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			return
 		}
 		session.Value = email
 
@@ -69,6 +71,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(500)
 			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			return
 		}
 
 		http.SetCookie(w, &cookie)
