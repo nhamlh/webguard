@@ -116,6 +116,6 @@ func (s *Session) IsExpired() bool {
 func NewSessionStore() SessionStore {
 	return SessionStore{
 		Name:   "Authorization",
-		Expire: 60,
+		Expire: 960,
 	}
 }
