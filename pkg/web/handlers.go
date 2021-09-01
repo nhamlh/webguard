@@ -5,14 +5,23 @@ import (
 	"net/http"
 
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/wg-dash/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func voidHandler(w http.ResponseWriter, r *http.Request) {
+type Handlers struct {
+	wg *wg.Device
+}
+
+func NewHandlers(wgInt *wg.Device) Handlers {
+	return Handlers{wg: wgInt}
+}
+
+func (h *Handlers) Void(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Simply works")
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	// doesn't need further check. LoginManager already
 	// check for validity of session
 	session, _ := sessionStore.Get(*r)
@@ -29,7 +38,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate("index", data, w)
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 	// already logged
 	requestSession, found := sessionStore.Get(*r)
 	if found && !requestSession.IsExpired() {
@@ -81,7 +90,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		session, found := sessionStore.Get(*r)

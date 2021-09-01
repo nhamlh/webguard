@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"github.com/nhamlh/wg-dash/pkg/wg"
 )
 
 func newStartCmd() *cobra.Command {
@@ -28,7 +29,8 @@ func newStartCmd() *cobra.Command {
 				cfg = config.Load(cfgFile)
 			}
 
-			router := web.NewRouter()
+			wgInterface := wg.LoadDevice(cfg.Wireguard)
+			router := web.NewRouterFor(wgInterface)
 
 			srv := &http.Server{
 				Handler: router,

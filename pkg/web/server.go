@@ -2,35 +2,38 @@ package web
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/nhamlh/wg-dash/pkg/wg"
 )
 
-func NewRouter() *chi.Mux {
+func NewRouterFor(wgInt *wg.Device) *chi.Mux {
 	router := chi.NewRouter()
 
 	lm := loginManager{
 		loginUrl: "/login",
 	}
 
+	h := NewHandlers(wgInt)
+
 	// User interface
-	router.Get("/", lm.wrap(indexHandler))
-	router.Get("/login", loginHandler)
-	router.Post("/login", loginHandler)
-	router.Get("/logout", logoutHandler)
+	router.Get("/", lm.wrap(h.Index))
+	router.Get("/login", h.Login)
+	router.Post("/login", h.Login)
+	router.Get("/logout", h.Logout)
 
 	// RESTful resources
 	router.Route("/profiles", func(r chi.Router) {
-		r.Get("/", lm.wrap(voidHandler))
-		r.Post("/", lm.wrap(voidHandler))
+		r.Get("/", lm.wrap(h.Void))
+		r.Post("/", lm.wrap(h.Void))
 
-		r.Get("/{id}", lm.wrap(voidHandler))
-		r.Delete("/{id}", lm.wrap(voidHandler))
+		r.Get("/{id}", lm.wrap(h.Void))
+		r.Delete("/{id}", lm.wrap(h.Void))
 
 		r.Route("/devices", func(r chi.Router) {
-			r.Get("/", lm.wrap(voidHandler))
-			r.Post("/", lm.wrap(voidHandler))
+			r.Get("/", lm.wrap(h.Void))
+			r.Post("/", lm.wrap(deviceHandler))
 
-			r.Get("/{id}", lm.wrap(voidHandler))
-			r.Delete("/{id}", lm.wrap(voidHandler))
+			r.Get("/{id}", lm.wrap(h.Void))
+			r.Delete("/{id}", lm.wrap(h.Void))
 		})
 	})
 
