@@ -23,4 +23,5 @@ type Device struct {
 	Name       string `db:"name"`
 	PrivateKey string `db:"private_key"`
 	AllowedIps string `db:"allowed_ips"`
+	Num        int    `db:"num"` // used to generate device IP
 }

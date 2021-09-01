@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/nhamlh/wg-dash/pkg/config"
-	"github.com/nhamlh/wg-dash/pkg/web"
-	"github.com/spf13/cobra"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/nhamlh/wg-dash/pkg/config"
+	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/wg-dash/pkg/web"
 	"github.com/nhamlh/wg-dash/pkg/wg"
+	"github.com/spf13/cobra"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"net"
 )
 
 func newStartCmd() *cobra.Command {
@@ -30,6 +34,31 @@ func newStartCmd() *cobra.Command {
 			}
 
 			wgInterface := wg.LoadDevice(cfg.Wireguard)
+
+			var peers []db.Device
+			db.DB.Select(&peers, "SELECT * FROM devices")
+
+			for _, p := range peers {
+				prikey, err := wgtypes.ParseKey(p.PrivateKey)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				peerIP, err := wgInterface.AllocateIP(p.Num)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				peer := wgtypes.PeerConfig{
+					PublicKey:         prikey.PublicKey(),
+					AllowedIPs:        []net.IPNet{peerIP},
+					ReplaceAllowedIPs: true,
+				}
+				if added := wgInterface.AddPeer(peer); added {
+					fmt.Println("Added peer")
+				}
+			}
+
 			router := web.NewRouterFor(wgInterface)
 
 			srv := &http.Server{
