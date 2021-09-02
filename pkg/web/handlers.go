@@ -196,6 +196,44 @@ values ($1,$2,$3,$4,$5)
 	}
 }
 
+func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		id := chi.URLParam(r, "id")
+
+		var device db.Device
+		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1", id)
+
+		if device == (db.Device{}) {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("index", templateData{"errors": []string{"Cannot delete such device"}}, w)
+			return
+		}
+
+		prikey, _ := wgtypes.ParseKey(device.PrivateKey)
+
+		_, found := h.wg.GetPeer(prikey.PublicKey())
+		if !found {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("index", templateData{"errors": []string{"Cannot find peer from interface", prikey.PublicKey().String()}}, w)
+			return
+		}
+
+		removed := h.wg.RemovePeer(prikey.PublicKey())
+		if !removed {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("index", templateData{"errors": []string{"Cannot remove peer from interface", prikey.PublicKey().String()}}, w)
+			return
+		}
+
+		db.DB.Exec("DELETE FROM devices WHERE id=$1", id)
+
+		http.Redirect(w, r, r.Referer(), 302)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (h *Handlers) ClientConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
