@@ -30,13 +30,8 @@ func getAvailNum(devices []db.Device) int {
 }
 
 func generatePeerConfig(d db.Device, peerIp net.IPNet) (wgtypes.PeerConfig, error) {
-	prikey, err := wgtypes.ParseKey(d.PrivateKey)
-	if err != nil {
-		return wgtypes.PeerConfig{}, err
-	}
-
 	return wgtypes.PeerConfig{
-		PublicKey:         prikey.PublicKey(),
+		PublicKey:         d.PrivateKey.PublicKey(),
 		AllowedIPs:        []net.IPNet{peerIp},
 		ReplaceAllowedIPs: true,
 	}, nil
@@ -54,8 +49,6 @@ Endpoint = {{ .WgEndpoint }}
 AllowedIPs = {{ .PeerRoutes }}
 `)
 
-	prikey, _ := wgtypes.ParseKey(d.PrivateKey)
-
 	var peerRoutes []string
 	for _, pr := range wgInt.PeerRoutes {
 		peerRoutes = append(peerRoutes, pr.String())
@@ -66,7 +59,7 @@ AllowedIPs = {{ .PeerRoutes }}
 
 	clientConfig := bytes.NewBufferString("")
 	t.Execute(clientConfig, map[string]string{
-		"PrivateKey":  prikey.String(),
+		"PrivateKey":  d.PrivateKey.String(),
 		"PeerIP":      peerIP.String(),
 		"WgPublicKey": pubkey.String(),
 		"WgEndpoint":  wgInt.Endpoint,

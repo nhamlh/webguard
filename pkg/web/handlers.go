@@ -42,8 +42,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	for _, dev := range devices {
 		id := dev.Id
 		name := dev.Name
-		prikey, _ := wgtypes.ParseKey(dev.PrivateKey)
-		peer, _ := h.wg.GetPeer(prikey.PublicKey())
+		peer, _ := h.wg.GetPeer(dev.PrivateKey.PublicKey())
 		lastSeen := peer.LastHandshakeTime.String()
 
 		devStatus = append(devStatus, map[string]string{
@@ -210,19 +209,27 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		prikey, _ := wgtypes.ParseKey(device.PrivateKey)
-
-		_, found := h.wg.GetPeer(prikey.PublicKey())
+		_, found := h.wg.GetPeer(device.PrivateKey.PublicKey())
 		if !found {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("index", templateData{"errors": []string{"Cannot find peer from interface", prikey.PublicKey().String()}}, w)
+			renderTemplate("index", templateData{
+				"errors": []string{
+					"Cannot find peer from interface",
+					device.PrivateKey.PublicKey().String(),
+				},
+			}, w)
 			return
 		}
 
-		removed := h.wg.RemovePeer(prikey.PublicKey())
+		removed := h.wg.RemovePeer(device.PrivateKey.PublicKey())
 		if !removed {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("index", templateData{"errors": []string{"Cannot remove peer from interface", prikey.PublicKey().String()}}, w)
+			renderTemplate("index", templateData{
+				"errors": []string{
+					"Cannot remove peer from interface",
+					device.PrivateKey.PublicKey().String(),
+				},
+			}, w)
 			return
 		}
 

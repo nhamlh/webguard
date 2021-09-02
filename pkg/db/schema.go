@@ -2,6 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 const (
@@ -18,10 +21,31 @@ type User struct {
 }
 
 type Device struct {
-	Id         int    `db:"id"`
-	UserId     int    `db:"user_id"`
-	Name       string `db:"name"`
-	PrivateKey string `db:"private_key"`
-	AllowedIps string `db:"allowed_ips"`
-	Num        int    `db:"num"` // used to generate device IP
+	Id         int        `db:"id"`
+	UserId     int        `db:"user_id"`
+	Name       string     `db:"name"`
+	PrivateKey PrivateKey `db:"private_key"`
+	AllowedIps string     `db:"allowed_ips"`
+	Num        int        `db:"num"` // used to generate device IP
+}
+
+type PrivateKey struct {
+	wgtypes.Key
+}
+
+// Value implements Valuer interface
+func (p *PrivateKey) Value() (driver.Value, error) {
+	return driver.Value(p.String()), nil
+}
+
+// Scan implements Scanner interface
+func (p *PrivateKey) Scan(src interface{}) error {
+	key, err := wgtypes.ParseKey(src.(string))
+	if err != nil {
+		return err
+	}
+
+	*p = PrivateKey{key}
+
+	return nil
 }

@@ -41,18 +41,13 @@ func newStartCmd() *cobra.Command {
 			db.DB.Select(&peers, "SELECT * FROM devices")
 
 			for _, p := range peers {
-				prikey, err := wgtypes.ParseKey(p.PrivateKey)
-				if err != nil {
-					log.Fatal(err)
-				}
-
 				peerIP, err := wgInterface.AllocateIP(p.Num)
 				if err != nil {
 					log.Fatal(err)
 				}
 
 				peer := wgtypes.PeerConfig{
-					PublicKey:         prikey.PublicKey(),
+					PublicKey:         p.PrivateKey.PublicKey(),
 					AllowedIPs:        []net.IPNet{peerIP},
 					ReplaceAllowedIPs: true,
 				}
