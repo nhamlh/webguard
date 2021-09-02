@@ -86,6 +86,10 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 }
 
 func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
+
+	refreshedDev, _ := d.c.Device(d.dev.Name)
+	d.dev = *refreshedDev
+
 	for _, p := range d.dev.Peers {
 		if p.PublicKey == pubkey {
 			return &p, true
