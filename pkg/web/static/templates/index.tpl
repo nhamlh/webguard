@@ -2,11 +2,22 @@
   {{ template "header" }}
   <body>
     <div>My devices</div>
-    <br>
+    <table>
+     <tr>
+       <th>Name</th>
+       <th>Publickey</th>
+       <th>Last seen</th>
+     </tr>
 
     {{ range $.devices }}
-      <div>{{ .Name }}: {{ .AllowedIps }}</div>
+     <tr>
+       <td>{{ .name }}</td>
+       <td>{{ .pubkey }}</td>
+       <td>{{ .lastSeen }}</td>
+     </tr>
     {{ end }}
+
+   </table>
 
   </body>
 </html>

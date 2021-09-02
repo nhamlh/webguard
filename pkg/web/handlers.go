@@ -35,8 +35,22 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	var devices []db.Device
 	db.DB.Select(&devices, "SELECT * FROM devices WHERE user_id=$1", user.Id)
 
+	var devStatus []map[string]string
+	for _, dev := range devices {
+		name := dev.Name
+		prikey, _ := wgtypes.ParseKey(dev.PrivateKey)
+		peer, _ := h.wg.GetPeer(prikey.PublicKey())
+		lastSeen := peer.LastHandshakeTime.String()
+
+		devStatus = append(devStatus, map[string]string{
+			"name":     name,
+			"pubkey":   peer.PublicKey.String(),
+			"lastSeen": lastSeen,
+		})
+	}
+
 	data := templateData{
-		"devices": devices,
+		"devices": devStatus,
 	}
 	renderTemplate("index", data, w)
 }
