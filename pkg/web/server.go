@@ -16,6 +16,8 @@ func NewRouterFor(wgInt *wg.Device) *chi.Mux {
 
 	// User interface
 	router.Get("/", lm.wrap(h.Index))
+	router.Get("/new_device", lm.wrap(h.Device))
+	router.Post("/new_device", lm.wrap(h.Device))
 	router.Get("/login", h.Login)
 	router.Post("/login", h.Login)
 	router.Get("/logout", h.Logout)
@@ -30,7 +32,7 @@ func NewRouterFor(wgInt *wg.Device) *chi.Mux {
 
 		r.Route("/devices", func(r chi.Router) {
 			r.Get("/", lm.wrap(h.Void))
-			r.Post("/", lm.wrap(deviceHandler))
+			r.Post("/", lm.wrap(h.Device))
 
 			r.Get("/{id}", lm.wrap(h.Void))
 			r.Delete("/{id}", lm.wrap(h.Void))

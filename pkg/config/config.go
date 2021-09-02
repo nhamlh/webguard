@@ -16,8 +16,9 @@ var (
 		Wireguard: WireguardConfig{
 			Name:       "wg-dash",
 			ListenPort: 51820,
-			PrivateKey: "abc",
-			Cidr:       "",
+			PrivateKey: "ANbdTCP22uZP3AzTdan2v6qXGRcdZRngkno0PnCPlkg=",
+			Cidr:       "192.168.0.0/29",
+			PeerRoutes: []string{"0.0.0.0/0"},
 		},
 	}
 )
@@ -53,5 +54,9 @@ type WireguardConfig struct {
 	Name       string `json:"name"`
 	ListenPort int    `json:"listen_port"`
 	PrivateKey string `json:"private_key"`
-	Cidr       string `json:"cidr"`
+	// CIDR to allocate IPs for peers
+	// CIDR has form of a.b.c.d/x
+	Cidr string `json:"cidr"`
+	// PeerRoutes will be pushed to peer's PeerRoutes directive in config file
+	PeerRoutes []string `json:"peer_routes"`
 }

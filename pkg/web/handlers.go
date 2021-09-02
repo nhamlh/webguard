@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"strings"
+
 	"github.com/nhamlh/wg-dash/pkg/db"
 	"github.com/nhamlh/wg-dash/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type Handlers struct {
@@ -101,5 +104,75 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, r.Referer(), 302)
 	default:
 		w.WriteHeader(405)
+	}
+}
+
+func (h *Handlers) Device(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		renderTemplate("device", nil, w)
+	case http.MethodPost:
+		session, _ := sessionStore.Get(*r)
+
+		name := r.FormValue("name")
+		if name == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("device", templateData{"errors": []string{"Device name cannot be empty"}}, w)
+			return
+		}
+
+		var user db.User
+		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
+
+		prikey, err := wgtypes.GeneratePrivateKey()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("device", templateData{"errors": []string{err.Error()}}, w)
+			return
+		}
+
+		var devices []db.Device
+		db.DB.Select(&devices, `SELECT * FROM devices`)
+		deviceNum := getAvailNum(devices)
+
+		var allowedIps []string
+		for _, pr := range h.wg.PeerRoutes {
+			allowedIps = append(allowedIps, pr.String())
+		}
+
+		_, err = db.DB.Exec(`
+INSERT INTO
+devices(user_id, name, private_key, num, allowed_ips)
+values ($1,$2,$3,$4,$5)
+`, user.Id, name, prikey.String(), deviceNum, strings.Join(allowedIps, ","))
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("device", templateData{"errors": []string{"cannot insert device into database", err.Error()}}, w)
+			return
+		}
+
+		var device db.Device
+		db.DB.Get(&device, `SELECT * FROM devices where private_key=$1`, prikey.String())
+
+		peerIp, _ := h.wg.AllocateIP(deviceNum)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("device", templateData{"errors": []string{"cannot allocate IP for your device", err.Error()}}, w)
+			return
+		}
+
+		peer, err := generatePeerConfig(device, peerIp)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("device", templateData{"errors": []string{"cannot import your device into server", err.Error()}}, w)
+			return
+		}
+
+		h.wg.AddPeer(peer)
+
+		http.Redirect(w, r, "/", http.StatusFound)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }

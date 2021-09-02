@@ -14,7 +14,9 @@ type Device struct {
 	c    wgctrl.Client
 	dev  wgtypes.Device
 	CIDR net.IPNet
-	ips  []net.IP // Allocatable IPs
+	// Routes to push to peers
+	PeerRoutes []net.IPNet
+	peerIps    []net.IP // a cache of allocatable IPs for peers
 }
 
 func LoadDevice(cfg config.WireguardConfig) *Device {
@@ -57,7 +59,27 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 		log.Fatal("Cannot configure wireguard interface: ", cfg.Name, "error: ", err)
 	}
 
-	return &Device{c: *client, dev: *dev, CIDR: *ipnet, ips: ips}
+	var peerRoutes []net.IPNet
+	for _, r := range cfg.PeerRoutes {
+		_, ipnet, err := net.ParseCIDR(r)
+		if err != nil {
+			continue
+		}
+
+		peerRoutes = append(peerRoutes, *ipnet)
+	}
+
+	if len(peerRoutes) == 0 {
+		log.Fatal("Cannot configure wireguard interface: there's no routes to push to peers")
+	}
+
+	return &Device{
+		c:          *client,
+		dev:        *dev,
+		CIDR:       *ipnet,
+		PeerRoutes: peerRoutes,
+		peerIps:    ips,
+	}
 }
 
 func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
@@ -106,12 +128,12 @@ func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
 }
 
 func (d *Device) AllocateIP(num int) (net.IPNet, error) {
-	if num < 0 || num > len(d.ips) {
+	if num < 0 || num > len(d.peerIps) {
 		return net.IPNet{}, errors.New("Cannot allocate IP: Out of bound")
 	}
 
 	return net.IPNet{
-		IP:   d.ips[num],
+		IP:   d.peerIps[num],
 		Mask: net.IPv4Mask(255, 255, 255, 255),
 	}, nil
 }

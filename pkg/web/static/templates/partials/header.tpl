@@ -1,7 +1,8 @@
 {{ define "header" }}
 <header>
   <title>Simple Wireguard dashboard</title>
-  <div><a href="/login">Login</a>Login</div>
-  <div><a href="/logout">Logout</a>Logout</div>
+  <div><a href="/new_device">New Device</a></div>
+  <div><a href="/login">Login</a></div>
+  <div><a href="/logout">Logout</a></div>
 </header>
 {{ end  }}
