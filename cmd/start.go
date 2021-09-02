@@ -33,6 +33,8 @@ func newStartCmd() *cobra.Command {
 				cfg = config.Load(cfgFile)
 			}
 
+			cfg.Wireguard.Host = cfg.Hostname
+
 			wgInterface := wg.LoadDevice(cfg.Wireguard)
 
 			var peers []db.Device

@@ -52,6 +52,7 @@ type WebConfig struct {
 
 type WireguardConfig struct {
 	Name       string `json:"name"`
+	Host       string
 	ListenPort int    `json:"listen_port"`
 	PrivateKey string `json:"private_key"`
 	// CIDR to allocate IPs for peers

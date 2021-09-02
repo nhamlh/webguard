@@ -18,6 +18,7 @@ func NewRouterFor(wgInt *wg.Device) *chi.Mux {
 	router.Get("/", lm.wrap(h.Index))
 	router.Get("/new_device", lm.wrap(h.Device))
 	router.Post("/new_device", lm.wrap(h.Device))
+	router.Get("/devices/{id}/download", lm.wrap(h.ClientConfig))
 	router.Get("/login", h.Login)
 	router.Post("/login", h.Login)
 	router.Get("/logout", h.Logout)

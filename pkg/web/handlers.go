@@ -6,6 +6,9 @@ import (
 
 	"strings"
 
+	"strconv"
+
+	"github.com/go-chi/chi"
 	"github.com/nhamlh/wg-dash/pkg/db"
 	"github.com/nhamlh/wg-dash/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
@@ -37,12 +40,14 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 
 	var devStatus []map[string]string
 	for _, dev := range devices {
+		id := dev.Id
 		name := dev.Name
 		prikey, _ := wgtypes.ParseKey(dev.PrivateKey)
 		peer, _ := h.wg.GetPeer(prikey.PublicKey())
 		lastSeen := peer.LastHandshakeTime.String()
 
 		devStatus = append(devStatus, map[string]string{
+			"id":       strconv.Itoa(id),
 			"name":     name,
 			"pubkey":   peer.PublicKey.String(),
 			"lastSeen": lastSeen,
@@ -186,6 +191,24 @@ values ($1,$2,$3,$4,$5)
 		h.wg.AddPeer(peer)
 
 		http.Redirect(w, r, "/", http.StatusFound)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handlers) ClientConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+
+		var device db.Device
+		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1", chi.URLParam(r, "id"))
+
+		clientCfg := generateClientConfig(h.wg, device)
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Disposition", "attachment; filename=wg.conf")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(clientCfg))
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

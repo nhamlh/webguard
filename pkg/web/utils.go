@@ -1,11 +1,15 @@
 package web
 
 import (
+	"html/template"
 	"net"
 	"sort"
 
+	"bytes"
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/wg-dash/pkg/wg"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"strings"
 )
 
 func getAvailNum(devices []db.Device) int {
@@ -36,4 +40,38 @@ func generatePeerConfig(d db.Device, peerIp net.IPNet) (wgtypes.PeerConfig, erro
 		AllowedIPs:        []net.IPNet{peerIp},
 		ReplaceAllowedIPs: true,
 	}, nil
+}
+
+func generateClientConfig(wgInt *wg.Device, d db.Device) string {
+	t, _ := template.New("clientConfig").Parse(`
+[Interface]
+PrivateKey = {{ .PrivateKey }}
+Address = {{ .PeerIP }}
+
+[Peer]
+PublicKey = {{ .WgPublicKey }}
+Endpoint = {{ .WgEndpoint }}
+AllowedIPs = {{ .PeerRoutes }}
+`)
+
+	prikey, _ := wgtypes.ParseKey(d.PrivateKey)
+
+	var peerRoutes []string
+	for _, pr := range wgInt.PeerRoutes {
+		peerRoutes = append(peerRoutes, pr.String())
+	}
+
+	peerIP, _ := wgInt.AllocateIP(d.Num)
+	pubkey := wgInt.Publickey()
+
+	clientConfig := bytes.NewBufferString("")
+	t.Execute(clientConfig, map[string]string{
+		"PrivateKey":  prikey.String(),
+		"PeerIP":      peerIP.String(),
+		"WgPublicKey": pubkey.String(),
+		"WgEndpoint":  wgInt.Endpoint,
+		"PeerRoutes":  strings.Join(peerRoutes, ","),
+	})
+
+	return clientConfig.String()
 }

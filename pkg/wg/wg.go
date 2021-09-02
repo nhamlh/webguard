@@ -8,12 +8,14 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"net"
+	"strconv"
 )
 
 type Device struct {
-	c    wgctrl.Client
-	dev  wgtypes.Device
-	CIDR net.IPNet
+	c        wgctrl.Client
+	dev      wgtypes.Device
+	Endpoint string
+	CIDR     net.IPNet
 	// Routes to push to peers
 	PeerRoutes []net.IPNet
 	peerIps    []net.IP // a cache of allocatable IPs for peers
@@ -75,6 +77,7 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 
 	return &Device{
 		c:          *client,
+		Endpoint:   cfg.Host + ":" + strconv.Itoa(cfg.ListenPort),
 		dev:        *dev,
 		CIDR:       *ipnet,
 		PeerRoutes: peerRoutes,
@@ -125,6 +128,10 @@ func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
 	}
 
 	return true
+}
+
+func (d *Device) Publickey() wgtypes.Key {
+	return d.dev.PublicKey
 }
 
 func (d *Device) AllocateIP(num int) (net.IPNet, error) {
