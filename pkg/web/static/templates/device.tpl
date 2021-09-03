@@ -1,20 +1,32 @@
 <html>
   {{ template "header" }}
   <body>
-    <br>
-    <div class="errors">
-    {{ range $.errors }}
-    <div>{{ . }}</div>
-    {{ end }}
-    </div>
-    <br>
-    <div class="device-tite">New Device:</div>
-    <div class="device-form">
-      <form action="/new_device" method="POST">
-        <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name"><br>
-        <input type="submit" value="Submit"></input>
-      </form>
+    <div class="container">
+      <br>
+      {{ template "display_errors" . }}
+      <br>
+
+      <div class="device-form" align="center">
+        <form action="/new_device" method="POST">
+
+          <div class="field">
+            <label class="label">Name</label>
+            <div class="control">
+              <input class="input" type="text" name="name" placeholder="My Device">
+            </div>
+          </div>
+
+          <div class="field is-grouped">
+            <div class="control">
+              <button class="button is-primary">Submit</button>
+            </div>
+            <div class="control">
+              <button class="button is-link is-light">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
     </div>
   </body>
 </html>
