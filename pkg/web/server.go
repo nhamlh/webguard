@@ -2,12 +2,14 @@ package web
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nhamlh/wg-dash/pkg/sso"
 	"github.com/nhamlh/wg-dash/pkg/wg"
 )
 
 func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {
 	router := chi.NewRouter()
+	router.Use(middleware.Logger)
 
 	lm := loginManager{
 		loginUrl: "/login",
