@@ -74,6 +74,7 @@ func (s *SessionStore) Marshal(se Session) (http.Cookie, error) {
 	cookie := http.Cookie{
 		Name:    s.Name,
 		Value:   base64.StdEncoding.EncodeToString([]byte(value)),
+		Path:    "/",
 		Expires: se.Expire,
 	}
 

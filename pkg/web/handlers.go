@@ -3,13 +3,12 @@ package web
 import (
 	"fmt"
 	"net/http"
-
-	"strings"
-
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/wg-dash/pkg/sso"
 	"github.com/nhamlh/wg-dash/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -17,10 +16,11 @@ import (
 
 type Handlers struct {
 	wg *wg.Device
+	op *sso.Oauth2Provider
 }
 
-func NewHandlers(wgInt *wg.Device) Handlers {
-	return Handlers{wg: wgInt}
+func NewHandlers(wgInt *wg.Device, sp *sso.Oauth2Provider) Handlers {
+	return Handlers{wg: wgInt, op: sp}
 }
 
 func (h *Handlers) Void(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 	// already logged
 	requestSession, found := sessionStore.Get(*r)
 	if found && !requestSession.IsExpired() {
-		http.Redirect(w, r, "/", 301)
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
 
 	switch r.Method {
@@ -105,7 +105,104 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.SetCookie(w, &cookie)
-		http.Redirect(w, r, "/", 301)
+		http.Redirect(w, r, "/", http.StatusFound)
+	default:
+		w.WriteHeader(405)
+	}
+}
+
+func (h *Handlers) OauthLogin(w http.ResponseWriter, r *http.Request) {
+	// already logged
+	requestSession, found := sessionStore.Get(*r)
+	if found && !requestSession.IsExpired() {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.op.Redirect(w, r)
+	default:
+		w.WriteHeader(405)
+	}
+}
+
+func (h *Handlers) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	// already logged
+	requestSession, found := sessionStore.Get(*r)
+	if found && !requestSession.IsExpired() {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		token, err := h.op.GetToken(r)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("login", templateData{"errors": []string{
+				"Cannot retrieve access token from authorization server",
+			}}, w)
+			return
+		}
+
+		// getting user email
+		email := h.op.Email(*token)
+		if email == "" {
+			renderTemplate("login", templateData{"errors": []string{
+				"Cannot retrieve your email from authorization server",
+			}}, w)
+			return
+		}
+
+		var user db.User
+		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+
+		// Insert user into database if nonexist
+		if user == (db.User{}) {
+			_, err = db.DB.Exec(`
+insert into
+users(email,password,is_admin,auth_type)
+values($1, "", 0, 1)`, email)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				renderTemplate("login", templateData{"errors": []string{
+					"User creation failed",
+					email,
+					err.Error(),
+				}}, w)
+				return
+			}
+
+			// let's try again
+			db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+			if user == (db.User{}) {
+				w.WriteHeader(http.StatusInternalServerError)
+				renderTemplate("login", templateData{"errors": []string{
+					"User creation failed",
+					email,
+				}}, w)
+				return
+			}
+		}
+
+		// All good, generate a session and push to client
+		session, err := sessionStore.New()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			return
+		}
+		session.Value = email
+
+		cookie, err := sessionStore.Marshal(session)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("login", templateData{"errors": []string{"Error while creating cookie"}}, w)
+			return
+		}
+
+		http.SetCookie(w, &cookie)
+		http.Redirect(w, r, "/", http.StatusFound)
 	default:
 		w.WriteHeader(405)
 	}
@@ -114,12 +211,16 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		session, found := sessionStore.Get(*r)
-		if found {
-			sessionStore.Delete(session.Id)
+		// Clear session cookie
+		cookie, err := sessionStore.Marshal(Session{})
+		if err != nil {
+			w.WriteHeader(500)
+			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			return
 		}
 
-		http.Redirect(w, r, r.Referer(), 302)
+		http.SetCookie(w, &cookie)
+		http.Redirect(w, r, r.Referer(), http.StatusFound)
 	default:
 		w.WriteHeader(405)
 	}
@@ -235,7 +336,7 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 
 		db.DB.Exec("DELETE FROM devices WHERE id=$1", id)
 
-		http.Redirect(w, r, r.Referer(), 302)
+		http.Redirect(w, r, r.Referer(), http.StatusFound)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

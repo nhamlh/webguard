@@ -6,12 +6,20 @@ import (
 	"log"
 )
 
+// ClientId:     "client id",
+// ClientSecret: "client secret",
 var (
 	DefaultConfig = Config{
 		DbPath:   "/tmp/wg-dash.db",
 		Hostname: "localhost",
 		Web: WebConfig{
+			Scheme:     "http",
 			ListenPort: 8080,
+			SSO: SSOConfig{
+				Provider:     "google",
+				ClientId:     "",
+				ClientSecret: "",
+			},
 		},
 		Wireguard: WireguardConfig{
 			Name:       "wg-dash",
@@ -47,7 +55,15 @@ func Load(configFile string) *Config {
 }
 
 type WebConfig struct {
-	ListenPort int `json:"listen_port"`
+	Scheme     string    `json:"scheme"`
+	ListenPort int       `json:"listen_port"`
+	SSO        SSOConfig `json:"sso"`
+}
+
+type SSOConfig struct {
+	Provider     string `json:"prodiver"`
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
 }
 
 type WireguardConfig struct {

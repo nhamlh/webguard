@@ -3,16 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/nhamlh/wg-dash/pkg/config"
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/wg-dash/pkg/sso"
 	"github.com/nhamlh/wg-dash/pkg/web"
 	"github.com/nhamlh/wg-dash/pkg/wg"
 	"github.com/spf13/cobra"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-	"net"
 )
 
 func newStartCmd() *cobra.Command {
@@ -56,7 +58,22 @@ func newStartCmd() *cobra.Command {
 				}
 			}
 
-			router := web.NewRouterFor(wgInterface)
+			redirectURL := fmt.Sprintf("%s://%s:%s/login/oauth/callback",
+				cfg.Web.Scheme,
+				cfg.Hostname,
+				strconv.Itoa(cfg.Web.ListenPort))
+
+			op, err := sso.NewOauth2Provider(
+				cfg.Web.SSO.ClientId,
+				cfg.Web.SSO.ClientSecret,
+				redirectURL,
+				cfg.Web.SSO.Provider)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			router := web.NewRouter(wgInterface, op)
 
 			srv := &http.Server{
 				Handler: router,
