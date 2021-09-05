@@ -3,6 +3,7 @@ module github.com/nhamlh/wg-dash
 go 1.16
 
 require (
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-chi/chi v4.1.0+incompatible
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/google/uuid v1.1.2

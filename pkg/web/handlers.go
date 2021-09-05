@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
 	"github.com/nhamlh/wg-dash/pkg/db"
 	"github.com/nhamlh/wg-dash/pkg/sso"
@@ -43,7 +44,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 		id := dev.Id
 		name := dev.Name
 		peer, _ := h.wg.GetPeer(dev.PrivateKey.PublicKey())
-		lastSeen := peer.LastHandshakeTime.String()
+		lastSeen := humanize.Time(peer.LastHandshakeTime)
 
 		devStatus = append(devStatus, map[string]string{
 			"id":       strconv.Itoa(id),
