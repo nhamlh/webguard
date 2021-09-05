@@ -302,19 +302,26 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		id := chi.URLParam(r, "id")
 
+		session, _ := sessionStore.Get(*r)
+		var user db.User
+		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
+
 		var device db.Device
-		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1", id)
+		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", id, user.Id)
 
 		if device == (db.Device{}) {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("index", templateData{"errors": []string{"Cannot delete such device"}}, w)
+			renderTemplate("error", templateData{
+				"user":   user,
+				"errors": []string{"Cannot delete such device"}}, w)
 			return
 		}
 
 		_, found := h.wg.GetPeer(device.PrivateKey.PublicKey())
 		if !found {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("index", templateData{
+			renderTemplate("error", templateData{
+				"user": user,
 				"errors": []string{
 					"Cannot find peer from interface",
 					device.PrivateKey.PublicKey().String(),
@@ -326,7 +333,8 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 		removed := h.wg.RemovePeer(device.PrivateKey.PublicKey())
 		if !removed {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("index", templateData{
+			renderTemplate("error", templateData{
+				"user": user,
 				"errors": []string{
 					"Cannot remove peer from interface",
 					device.PrivateKey.PublicKey().String(),
@@ -337,7 +345,7 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 
 		db.DB.Exec("DELETE FROM devices WHERE id=$1", id)
 
-		http.Redirect(w, r, r.Referer(), http.StatusFound)
+		http.Redirect(w, r, "/", http.StatusFound)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -346,9 +354,20 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ClientConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		session, _ := sessionStore.Get(*r)
+		var user db.User
+		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
 
 		var device db.Device
-		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1", chi.URLParam(r, "id"))
+		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", chi.URLParam(r, "id"), user.Id)
+
+		if device == (db.Device{}) {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("error", templateData{
+				"user":   user,
+				"errors": []string{"Cannot delete such device"}}, w)
+			return
+		}
 
 		clientCfg := generateClientConfig(h.wg, device)
 
