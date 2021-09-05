@@ -94,7 +94,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		session, err := sessionStore.New()
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{"errors": []string{"Error happened [101]"}}, w)
 			return
 		}
 		session.Value = email
@@ -102,7 +102,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		cookie, err := sessionStore.Marshal(session)
 		if err != nil {
 			w.WriteHeader(500)
-			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
+			renderTemplate("login", templateData{"errors": []string{"Error happened [102]"}}, w)
 			return
 		}
 
@@ -275,7 +275,7 @@ values ($1,$2,$3,$4,$5)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
-				"errors": []string{"cannot insert device into database", err.Error()}}, w)
+				"errors": []string{"Cannot create device [E101]"}}, w)
 			return
 		}
 
@@ -287,7 +287,7 @@ values ($1,$2,$3,$4,$5)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
-				"errors": []string{"cannot allocate IP for your device", err.Error()}}, w)
+				"errors": []string{"Cannot create device [E102]"}}, w)
 			return
 		}
 
@@ -296,7 +296,7 @@ values ($1,$2,$3,$4,$5)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
-				"errors": []string{"cannot import your device into server", err.Error()}}, w)
+				"errors": []string{"Cannot create device [E103]"}}, w)
 			return
 		}
 
