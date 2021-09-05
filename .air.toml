@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
   cmd = "go build -o ./tmp/main ./cmd"
   bin = "./tmp/main"
-  full_bin = "./tmp/main start"
+  full_bin = "sudo ./tmp/main start"
   delay = 1000
   exclude_dir = []
   exclude_file = []
