@@ -8,7 +8,7 @@
       <section class="section">
       <div class="columns is-centered">
       <div class="column is-one-third">
-        <a class="button is-primary is-fullwidth" href="/">
+        <a class="button is-cancel is-fullwidth" href="/">
           Go back
         </a>
       </div> <!--column-->
