@@ -34,6 +34,16 @@
       <div class="navbar-end">
         <div class="navbar-item">
           <div class="buttons">
+          {{ if $.user }}
+            <a href="/logout" class="button is-light">
+              <span class="icon-text">
+                <span class="icon">
+                  <i class="fas fa-sign-out-alt"></i>
+                </span>
+                <span>Logout</span>
+              </span>
+            </a>
+          {{ else }}
             <a href="/login" class="button is-light">
               <span class="icon-text">
                 <span class="icon">
@@ -42,6 +52,7 @@
                 <span>Login</span>
               </span>
             </a>
+          {{ end }}
           </div>
         </div>
       </div>

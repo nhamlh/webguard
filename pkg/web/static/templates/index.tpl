@@ -1,5 +1,5 @@
 <html>
-  {{ template "header" }}
+  {{ template "header" . }}
   <body>
     <div class="container is-fluid">
 
