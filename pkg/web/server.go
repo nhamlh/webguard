@@ -18,10 +18,10 @@ func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {
 	router.Get("/", lm.wrap(h.Index))
 
 	// Working with devices
-	router.Get("/new_device", lm.wrap(h.Device))
-	router.Post("/new_device", lm.wrap(h.Device))
-	router.Get("/devices/{id}/download", lm.wrap(h.ClientConfig))
-	router.Get("/devices/{id}/delete", lm.wrap(h.DeleteDevice))
+	router.Get("/new_device", lm.wrap(h.DeviceAdd))
+	router.Post("/new_device", lm.wrap(h.DeviceAdd))
+	router.Get("/devices/{id}/download", lm.wrap(h.DeviceDownload))
+	router.Get("/devices/{id}/delete", lm.wrap(h.DeviceDelete))
 
 	// Session management
 	router.Get("/login", h.Login)
@@ -29,23 +29,6 @@ func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {
 	router.Get("/login/oauth", h.OauthLogin)
 	router.Get("/login/oauth/callback", h.OauthCallback)
 	router.Get("/logout", h.Logout)
-
-	// RESTful resources
-	router.Route("/profiles", func(r chi.Router) {
-		r.Get("/", lm.wrap(h.Void))
-		r.Post("/", lm.wrap(h.Void))
-
-		r.Get("/{id}", lm.wrap(h.Void))
-		r.Delete("/{id}", lm.wrap(h.Void))
-
-		r.Route("/devices", func(r chi.Router) {
-			r.Get("/", lm.wrap(h.Void))
-			r.Post("/", lm.wrap(h.Device))
-
-			r.Get("/{id}", lm.wrap(h.Void))
-			r.Delete("/{id}", lm.wrap(h.Void))
-		})
-	})
 
 	return router
 }

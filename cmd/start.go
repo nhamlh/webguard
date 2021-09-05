@@ -54,7 +54,7 @@ func newStartCmd() *cobra.Command {
 					ReplaceAllowedIPs: true,
 				}
 				if added := wgInterface.AddPeer(peer); added {
-					fmt.Println("Added peer")
+					log.Println("Added peer", p.PrivateKey.PublicKey())
 				}
 			}
 
@@ -83,7 +83,7 @@ func newStartCmd() *cobra.Command {
 				ReadTimeout:  15 * time.Second,
 			}
 
-			fmt.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Hostname, cfg.Web.ListenPort))
+			log.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Hostname, cfg.Web.ListenPort))
 			srv.ListenAndServe()
 		},
 	}

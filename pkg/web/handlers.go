@@ -86,14 +86,14 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if user == (db.User{}) || !samePassword {
-			w.WriteHeader(403)
+			w.WriteHeader(http.StatusUnauthorized)
 			renderTemplate("login", templateData{"errors": []string{"Invalid email or password"}}, w)
 			return
 		}
 
 		session, err := sessionStore.New()
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("login", templateData{"errors": []string{"Error happened [101]"}}, w)
 			return
 		}
@@ -101,7 +101,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 
 		cookie, err := sessionStore.Marshal(session)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("login", templateData{"errors": []string{"Error happened [102]"}}, w)
 			return
 		}
@@ -109,7 +109,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &cookie)
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
-		w.WriteHeader(405)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -124,7 +124,7 @@ func (h *Handlers) OauthLogin(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		h.op.Redirect(w, r)
 	default:
-		w.WriteHeader(405)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -206,7 +206,7 @@ values($1, "", 0, 1)`, email)
 		http.SetCookie(w, &cookie)
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
-		w.WriteHeader(405)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -216,7 +216,7 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		// Clear session cookie
 		cookie, err := sessionStore.Marshal(Session{})
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("login", templateData{"errors": []string{"Internal error"}}, w)
 			return
 		}
@@ -224,11 +224,11 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &cookie)
 		http.Redirect(w, r, r.Referer(), http.StatusFound)
 	default:
-		w.WriteHeader(405)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func (h *Handlers) Device(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		renderTemplate("device", nil, w)
@@ -308,7 +308,7 @@ values ($1,$2,$3,$4,$5)
 	}
 }
 
-func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		id := chi.URLParam(r, "id")
@@ -362,7 +362,7 @@ func (h *Handlers) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handlers) ClientConfig(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DeviceDownload(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		session, _ := sessionStore.Get(*r)
