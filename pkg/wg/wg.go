@@ -1,9 +1,8 @@
 package wg
 
 import (
-	"log"
-
 	"errors"
+	"fmt"
 	"github.com/nhamlh/wg-dash/pkg/config"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -21,34 +20,30 @@ type Device struct {
 	peerIps    []net.IP // a cache of allocatable IPs for peers
 }
 
-func LoadDevice(cfg config.WireguardConfig) *Device {
+func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 	client, err := wgctrl.New()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Cannot initialize client: %v", err)
 	}
 
 	dev, err := client.Device(cfg.Name)
 	if err != nil {
-		log.Fatal("Cannot load wireguard interface:", cfg.Name, "error:", err)
+		return nil, fmt.Errorf("Client cannot get device %s: %v", cfg.Name, err)
 	}
 
 	key, err := wgtypes.ParseKey(cfg.PrivateKey)
 	if err != nil {
-		log.Fatal("Cannot configure wireguard interface:", cfg.Name, "error:", err)
+		return nil, fmt.Errorf("Cannot parse private key: %v", err)
 	}
 
 	ip, ipnet, err := net.ParseCIDR(cfg.Cidr)
 	if err != nil {
-		log.Fatal("Cannot configure wireguard interface: ", cfg.Name, "error: ", err)
+		return nil, fmt.Errorf("Cannot parse CIDR: %v", err)
 	}
 
-	ips, err := allIPs(ip, *ipnet)
-	if err != nil {
-		log.Fatal("Cannot configure wireguard interface: ", cfg.Name, "error: ", err)
-	}
-
+	ips, _ := allIPs(ip, *ipnet)
 	if len(ips) < 2 {
-		log.Fatal("Not enough allocatable IPs for wireguard to run. It needs at least 2 IPs")
+		return nil, errors.New("Not enough allocatable IPs for wireguard to run. It needs at least 2 IPs")
 	}
 
 	wgCfg := wgtypes.Config{
@@ -58,7 +53,7 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 
 	err = client.ConfigureDevice(cfg.Name, wgCfg)
 	if err != nil {
-		log.Fatal("Cannot configure wireguard interface: ", cfg.Name, "error: ", err)
+		return nil, err
 	}
 
 	var peerRoutes []net.IPNet
@@ -72,7 +67,7 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 	}
 
 	if len(peerRoutes) == 0 {
-		log.Fatal("Cannot configure wireguard interface: there's no routes to push to peers")
+		return nil, errors.New("Cannot configure wireguard interface: there's no routes to push to peers")
 	}
 
 	return &Device{
@@ -82,7 +77,7 @@ func LoadDevice(cfg config.WireguardConfig) *Device {
 		CIDR:       *ipnet,
 		PeerRoutes: peerRoutes,
 		peerIps:    ips,
-	}
+	}, nil
 }
 
 func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {

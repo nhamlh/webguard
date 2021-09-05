@@ -37,7 +37,10 @@ func newStartCmd() *cobra.Command {
 
 			cfg.Wireguard.Host = cfg.Hostname
 
-			wgInterface := wg.LoadDevice(cfg.Wireguard)
+			wgInterface, err := wg.LoadDevice(cfg.Wireguard)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Cannot load Wireguard interface: %v", err))
+			}
 
 			var peers []db.Device
 			db.DB.Select(&peers, "SELECT * FROM devices")
@@ -70,7 +73,7 @@ func newStartCmd() *cobra.Command {
 				cfg.Web.SSO.Provider)
 
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal(fmt.Errorf("Cannot configure SSO provider: %v", err))
 			}
 
 			router := web.NewRouter(wgInterface, op)
