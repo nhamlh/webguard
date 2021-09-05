@@ -55,6 +55,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := templateData{
+		"user":    user,
 		"devices": devStatus,
 	}
 	renderTemplate("index", data, w)
@@ -234,20 +235,24 @@ func (h *Handlers) Device(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		session, _ := sessionStore.Get(*r)
 
+		var user db.User
+		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
+
 		name := r.FormValue("name")
 		if name == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("device", templateData{"errors": []string{"Device name cannot be empty"}}, w)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{"Device name cannot be empty"}}, w)
 			return
 		}
-
-		var user db.User
-		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
 
 		prikey, err := wgtypes.GeneratePrivateKey()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{"errors": []string{err.Error()}}, w)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{err.Error()}}, w)
 			return
 		}
 
@@ -268,7 +273,9 @@ values ($1,$2,$3,$4,$5)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{"errors": []string{"cannot insert device into database", err.Error()}}, w)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{"cannot insert device into database", err.Error()}}, w)
 			return
 		}
 
@@ -278,14 +285,18 @@ values ($1,$2,$3,$4,$5)
 		peerIp, _ := h.wg.AllocateIP(deviceNum)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{"errors": []string{"cannot allocate IP for your device", err.Error()}}, w)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{"cannot allocate IP for your device", err.Error()}}, w)
 			return
 		}
 
 		peer, err := generatePeerConfig(device, peerIp)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{"errors": []string{"cannot import your device into server", err.Error()}}, w)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{"cannot import your device into server", err.Error()}}, w)
 			return
 		}
 
