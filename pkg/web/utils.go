@@ -1,9 +1,9 @@
 package web
 
 import (
-	"html/template"
 	"net"
 	"sort"
+	"text/template"
 
 	"bytes"
 	"github.com/nhamlh/wg-dash/pkg/db"

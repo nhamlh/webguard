@@ -5,10 +5,8 @@ import (
 	"html/template"
 	"log"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,17 +29,15 @@ func newDBMigrateCmd() *cobra.Command {
 		Use:   "migrate",
 		Short: "Migrate database schema",
 		Run: func(cmd *cobra.Command, args []string) {
-			driver, err := sqlite3.WithInstance(db.DB.DB, &sqlite3.Config{})
-			if err != nil {
-				log.Fatal(err)
+			if err := goose.SetDialect("sqlite3"); err != nil {
+				panic(err)
 			}
 
-			m, err := migrate.NewWithDatabaseInstance("file://db/migrations", "sqlite3", driver)
-			if err != nil {
-				log.Fatal(err)
-			}
+			goose.SetBaseFS(db.Migrations)
 
-			m.Steps(2)
+			if err := goose.Up(db.DB.DB, "migrations"); err != nil {
+				panic(err)
+			}
 		},
 	}
 
