@@ -61,7 +61,7 @@ type WebConfig struct {
 }
 
 type SSOConfig struct {
-	Provider     string `json:"prodiver"`
+	Provider     string `json:"provider"`
 	ClientId     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
