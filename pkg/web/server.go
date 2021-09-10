@@ -3,8 +3,8 @@ package web
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/nhamlh/wg-dash/pkg/sso"
-	"github.com/nhamlh/wg-dash/pkg/wg"
+	"github.com/nhamlh/webguard/pkg/sso"
+	"github.com/nhamlh/webguard/pkg/wg"
 )
 
 func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {

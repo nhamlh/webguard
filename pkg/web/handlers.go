@@ -8,9 +8,9 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
-	"github.com/nhamlh/wg-dash/pkg/db"
-	"github.com/nhamlh/wg-dash/pkg/sso"
-	"github.com/nhamlh/wg-dash/pkg/wg"
+	"github.com/nhamlh/webguard/pkg/db"
+	"github.com/nhamlh/webguard/pkg/sso"
+	"github.com/nhamlh/webguard/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )

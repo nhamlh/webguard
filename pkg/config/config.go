@@ -10,7 +10,7 @@ import (
 // ClientSecret: "client secret",
 var (
 	DefaultConfig = Config{
-		DbPath:   "/tmp/wg-dash.db",
+		DbPath:   "./webguard.db",
 		Hostname: "localhost",
 		Web: WebConfig{
 			Scheme:     "http",
@@ -22,7 +22,7 @@ var (
 			},
 		},
 		Wireguard: WireguardConfig{
-			Name:       "wg-dash",
+			Name:       "webguard",
 			ListenPort: 51820,
 			PrivateKey: "ANbdTCP22uZP3AzTdan2v6qXGRcdZRngkno0PnCPlkg=",
 			Cidr:       "192.168.0.0/29",

@@ -3,11 +3,12 @@ package wg
 import (
 	"errors"
 	"fmt"
-	"github.com/nhamlh/wg-dash/pkg/config"
-	"golang.zx2c4.com/wireguard/wgctrl"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"net"
 	"strconv"
+
+	"github.com/nhamlh/webguard/pkg/config"
+	"golang.zx2c4.com/wireguard/wgctrl"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type Device struct {
