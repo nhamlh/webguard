@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/nhamlh/webguard/pkg/config"
+	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -22,6 +23,21 @@ type Device struct {
 }
 
 func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
+	ip, ipnet, err := net.ParseCIDR(cfg.Cidr)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot parse CIDR: %v", err)
+	}
+
+	ips, _ := allIPs(ip, *ipnet)
+	if len(ips) < 2 {
+		return nil, errors.New("Not enough allocatable IPs for wireguard to run. It needs at least 2 IPs")
+	}
+
+	err = initWgInterface(cfg.Name, ips[0])
+	if err != nil {
+		return nil, fmt.Errorf("Cannot initialize wireguard link: %v", err)
+	}
+
 	client, err := wgctrl.New()
 	if err != nil {
 		return nil, fmt.Errorf("Cannot initialize client: %v", err)
@@ -35,16 +51,6 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 	key, err := wgtypes.ParseKey(cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot parse private key: %v", err)
-	}
-
-	ip, ipnet, err := net.ParseCIDR(cfg.Cidr)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot parse CIDR: %v", err)
-	}
-
-	ips, _ := allIPs(ip, *ipnet)
-	if len(ips) < 2 {
-		return nil, errors.New("Not enough allocatable IPs for wireguard to run. It needs at least 2 IPs")
 	}
 
 	wgCfg := wgtypes.Config{
@@ -164,4 +170,53 @@ func inc(ip net.IP) {
 			break
 		}
 	}
+}
+
+type wgLink struct {
+	netlink.LinkAttrs
+}
+
+var _ netlink.Link = wgLink{}
+
+func (w wgLink) Attrs() *netlink.LinkAttrs {
+	return &w.LinkAttrs
+
+}
+func (w wgLink) Type() string {
+	return "wireguard"
+}
+
+func initWgInterface(name string, ip net.IP) error {
+	l, err := netlink.LinkByName(name)
+	if err != nil {
+		l = wgLink{
+			netlink.LinkAttrs{
+				Name: name,
+			},
+		}
+		err = netlink.LinkAdd(l)
+		if err != nil {
+			return fmt.Errorf("link add dev error: %v", err)
+		}
+	}
+
+	err = netlink.LinkSetUp(l)
+	if err != nil {
+		return fmt.Errorf("link set dev up error: %v", err)
+	}
+
+	ipnet := net.IPNet{
+		IP:   ip,
+		Mask: []byte{255, 255, 255, 255},
+	}
+
+	addr, err := netlink.ParseAddr(ipnet.String())
+	if err != nil {
+		return err
+	}
+
+	// Ignore `ip addr add` error. Assume it's idempotent
+	netlink.AddrAdd(l, addr)
+
+	return nil
 }
