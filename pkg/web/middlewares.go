@@ -1,11 +1,11 @@
 package web
 
 import (
-	"time"
 	"net/http"
+	"time"
 
-	"github.com/nhamlh/wg-dash/pkg/db"
 	"fmt"
+	"github.com/nhamlh/webguard/pkg/db"
 )
 
 type loginManager struct {

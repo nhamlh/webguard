@@ -6,8 +6,8 @@ import (
 	"text/template"
 
 	"bytes"
-	"github.com/nhamlh/wg-dash/pkg/db"
-	"github.com/nhamlh/wg-dash/pkg/wg"
+	"github.com/nhamlh/webguard/pkg/db"
+	"github.com/nhamlh/webguard/pkg/wg"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"strings"
 )
