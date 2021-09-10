@@ -68,22 +68,93 @@
         </div>
       </div> <!--columns-->
 
+    <!-- This lengthy to replace javascript functionality -->
+    {{ if eq $.help "windows" }}
       <div class="columns is-centered">
         <div class="column">
           <div class="tabs is-boxed is-medium is-centered">
             <ul>
-              <li class="is-active"><a>Mac</a></li>
-              <li><a>Windows</a></li>
-              <li><a>Linux</a></li>
-              <li><a>Android</a></li>
-              <li><a>iOS</a></li>
+              <li><a href="?help=mac">Mac</a></li>
+              <li class="is-active"><a href="?help=windows">Windows</a></li>
+              <li><a href="?help=linux">Linux</a></li>
+              <li><a href="?help=android">Android</a></li>
+              <li><a href="?help=ios">iOS</a></li>
             </ul>
           </div>
           <div>
-Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+            Help for Windows
           </div>
         </div>
       </div> <!--columns-->
+    {{ else if eq $.help "linux" }}
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="tabs is-boxed is-medium is-centered">
+            <ul>
+              <li><a href="?help=mac">Mac</a></li>
+              <li><a href="?help=windows">Windows</a></li>
+              <li class="is-active"><a href="?help=linux">Linux</a></li>
+              <li><a href="?help=android">Android</a></li>
+              <li><a href="?help=ios">iOS</a></li>
+            </ul>
+          </div>
+          <div>
+            Help for Linux
+          </div>
+        </div>
+      </div> <!--columns-->
+    {{ else if eq $.help "android" }}
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="tabs is-boxed is-medium is-centered">
+            <ul>
+              <li><a href="?help=mac">Mac</a></li>
+              <li><a href="?help=windows">Windows</a></li>
+              <li><a href="?help=linux">Linux</a></li>
+              <li class="is-active"><a href="?help=android">Android</a></li>
+              <li><a href="?help=ios">iOS</a></li>
+            </ul>
+          </div>
+          <div>
+            Help for Android
+          </div>
+        </div>
+      </div> <!--columns-->
+    {{ else if eq $.help "ios" }}
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="tabs is-boxed is-medium is-centered">
+            <ul>
+              <li><a href="?help=mac">Mac</a></li>
+              <li><a href="?help=windows">Windows</a></li>
+              <li><a href="?help=linux">Linux</a></li>
+              <li><a href="?help=android">Android</a></li>
+              <li class="is-active"><a href="?help=ios">iOS</a></li>
+            </ul>
+          </div>
+          <div>
+            Help for iOS
+          </div>
+        </div>
+      </div> <!--columns-->
+    {{ else }}
+      <div class="columns is-centered">
+        <div class="column">
+          <div class="tabs is-boxed is-medium is-centered">
+            <ul>
+              <li class="is-active"><a href="?help=mac">Mac</a></li>
+              <li><a href="?help=windows">Windows</a></li>
+              <li><a href="?help=linux">Linux</a></li>
+              <li><a href="?help=android">Android</a></li>
+              <li><a href="?help=ios">iOS</a></li>
+            </ul>
+          </div>
+          <div>
+            Help for Mac
+          </div>
+        </div>
+      </div> <!--columns-->
+    {{ end }}
       </section>
     </div> <!--container-->
   </body>
