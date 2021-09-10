@@ -61,9 +61,10 @@ type WebConfig struct {
 }
 
 type SSOConfig struct {
-	Provider     string `json:"provider"`
-	ClientId     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
+	Provider     string            `json:"provider"`
+	ClientId     string            `json:"client_id"`
+	ClientSecret string            `json:"client_secret"`
+	ProviderOpts map[string]string `json:"provider_options"`
 }
 
 type WireguardConfig struct {

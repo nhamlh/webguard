@@ -16,38 +16,22 @@ import (
 )
 
 type Oauth2Provider struct {
-	cfg  *oauth2.Config
-	user UserApi
+	cfg *oauth2.Config
+	pc  *ProviderConfig
 }
 
-func NewOauth2Provider(clientId, clientSecret, redirectURL, provider string) (*Oauth2Provider, error) {
-	var user UserApi
-	var endpoint oauth2.Endpoint
-	switch provider {
-	case "github":
-		user = GithubUserApi{}
-		endpoint = github.Endpoint
-	case "gitlab":
-		user = GitlabUserApi{}
-		endpoint = gitlab.Endpoint
-	case "google":
-		user = GoogleUserApi{}
-		endpoint = google.Endpoint
-	default:
-		return &Oauth2Provider{}, errors.New("Provider not supported")
-	}
-
+func NewOauth2Provider(clientId, clientSecret, redirectURL string, pc ProviderConfig) (*Oauth2Provider, error) {
 	oc := oauth2.Config{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
 		RedirectURL:  redirectURL,
-		Endpoint:     endpoint,
-		Scopes:       user.Scopes(),
+		Endpoint:     pc.endpoint,
+		Scopes:       pc.scopes,
 	}
 
 	return &Oauth2Provider{
-		cfg:  &oc,
-		user: user,
+		cfg: &oc,
+		pc:  &pc,
 	}, nil
 }
 
@@ -76,7 +60,7 @@ func (p *Oauth2Provider) GetToken(r *http.Request) (token *oauth2.Token, err err
 func (p *Oauth2Provider) Email(token oauth2.Token) string {
 	client := &http.Client{}
 
-	resp, err := client.Do(p.user.Request(token))
+	resp, err := client.Do(p.pc.userReq(token))
 	if err != nil {
 		return ""
 	}
@@ -95,75 +79,88 @@ func (p *Oauth2Provider) Email(token oauth2.Token) string {
 		return ""
 	}
 
-	email := p.user.Parse(jsonObj)
+	email := p.pc.parse(jsonObj)
 
 	return email
 }
 
-// UserApi is an interface to get user object from various providers
-// and extract email field used as our user's identity
-type UserApi interface {
-	Scopes() []string // Return scopes needed to get access user api
-	Request(oauth2.Token) *http.Request
-	Parse(map[string]interface{}) string
+type ProviderConfig struct {
+	endpoint oauth2.Endpoint
+	scopes   []string
+	userReq  func(oauth2.Token) *http.Request
+	parse    func(map[string]interface{}) string
 }
 
-type GithubUserApi struct{}
+var GithubProvider = ProviderConfig{
+	endpoint: github.Endpoint,
+	scopes:   []string{"email"},
+	userReq: func(t oauth2.Token) (req *http.Request) {
+		req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
+		if err != nil {
+			return
+		}
 
-func (g GithubUserApi) Scopes() []string {
-	return []string{"email"}
-}
-
-func (g GithubUserApi) Request(token oauth2.Token) (req *http.Request) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
-	if err != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", t.AccessToken))
 		return
-	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token.AccessToken))
-	return
+	},
+	parse: func(jsonObj map[string]interface{}) string {
+		return jsonObj["email"].(string)
+	},
 }
 
-func (g GithubUserApi) Parse(jsonObj map[string]interface{}) string {
-	return jsonObj["email"].(string)
-}
+var GitlabProvider = ProviderConfig{
+	endpoint: gitlab.Endpoint,
+	scopes:   []string{"read_user"},
+	userReq: func(t oauth2.Token) (req *http.Request) {
+		req, err := http.NewRequest("GET", "https://gitlab.com/api/v4/user", nil)
+		if err != nil {
+			return
+		}
 
-type GitlabUserApi struct{}
-
-func (g GitlabUserApi) Scopes() []string {
-	return []string{"read_user"}
-}
-
-func (g GitlabUserApi) Request(token oauth2.Token) (req *http.Request) {
-	req, err := http.NewRequest("GET", "https://gitlab.com/api/v4/user", nil)
-	if err != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.AccessToken))
 		return
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
-	return
+	},
+	parse: func(jsonObj map[string]interface{}) string {
+		return jsonObj["email"].(string)
+	},
 }
 
-func (g GitlabUserApi) Parse(jsonObj map[string]interface{}) string {
-	return jsonObj["email"].(string)
-}
+var GoogleProvider = ProviderConfig{
+	endpoint: google.Endpoint,
+	scopes:   []string{"https://www.googleapis.com/auth/userinfo.email"},
+	userReq: func(t oauth2.Token) (req *http.Request) {
+		req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v1/userinfo?alt=json", nil)
+		if err != nil {
+			return
+		}
 
-type GoogleUserApi struct{}
-
-func (g GoogleUserApi) Scopes() []string {
-	return []string{"https://www.googleapis.com/auth/userinfo.email"}
-}
-
-func (g GoogleUserApi) Request(token oauth2.Token) (req *http.Request) {
-	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v1/userinfo?alt=json", nil)
-	if err != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.AccessToken))
 		return
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
-	return
+	},
+	parse: func(jsonObj map[string]interface{}) string {
+		return jsonObj["email"].(string)
+	},
 }
 
-func (g GoogleUserApi) Parse(jsonObj map[string]interface{}) string {
-	return jsonObj["email"].(string)
+func NewOktaProvider(domain string) ProviderConfig {
+	return ProviderConfig{
+		endpoint: oauth2.Endpoint{
+			AuthURL:  fmt.Sprintf("https://%s/oauth2/v1/authorize", domain),
+			TokenURL: fmt.Sprintf("https://%s/oauth2/v1/token", domain),
+		},
+		scopes: []string{"openid", "email"},
+		userReq: func(t oauth2.Token) (req *http.Request) {
+			req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/oauth2/v1/userinfo", domain), nil)
+			if err != nil {
+				return
+			}
+
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.AccessToken))
+			return
+		},
+		parse: func(jsonObj map[string]interface{}) string {
+			return jsonObj["email"].(string)
+		},
+	}
 }
