@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -61,6 +62,13 @@ func newStartCmd() *cobra.Command {
 				}
 			}
 
+			log.Println("Configure SSO provider:", cfg.Web.SSO.Provider)
+
+			pc, err := BuildProviderConfig(cfg.Web.SSO)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Cannot configure SSO provider %s: %v", cfg.Web.SSO.Provider, err))
+			}
+
 			redirectURL := fmt.Sprintf("%s://%s:%s/login/oauth/callback",
 				cfg.Web.Scheme,
 				cfg.Hostname,
@@ -70,7 +78,7 @@ func newStartCmd() *cobra.Command {
 				cfg.Web.SSO.ClientId,
 				cfg.Web.SSO.ClientSecret,
 				redirectURL,
-				cfg.Web.SSO.Provider)
+				pc)
 
 			if err != nil {
 				log.Fatal(fmt.Errorf("Cannot configure SSO provider: %v", err))
@@ -87,9 +95,32 @@ func newStartCmd() *cobra.Command {
 			}
 
 			log.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Hostname, cfg.Web.ListenPort))
-			srv.ListenAndServe()
+			err = srv.ListenAndServe()
+			if err != nil {
+				log.Fatal(fmt.Errorf("Web server failed: %v", err))
+			}
+
 		},
 	}
 
 	return cmd
+}
+
+func BuildProviderConfig(cfg config.SSOConfig) (sso.ProviderConfig, error) {
+	var pc sso.ProviderConfig
+	var err error
+	switch cfg.Provider {
+	case "github":
+		pc = sso.GithubProvider
+	case "gitlab":
+		pc = sso.GitlabProvider
+	case "google":
+		pc = sso.GoogleProvider
+	case "okta":
+		pc = sso.NewOktaProvider(cfg.ProviderOpts["domain"])
+	default:
+		err = errors.New("Unsupported provider")
+	}
+
+	return pc, err
 }
