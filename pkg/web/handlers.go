@@ -13,6 +13,7 @@ import (
 	"github.com/nhamlh/webguard/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"log"
 )
 
 type Handlers struct {
@@ -258,6 +259,7 @@ func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 
 		prikey, err := wgtypes.GeneratePrivateKey()
 		if err != nil {
+			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
@@ -281,6 +283,7 @@ values ($1,$2,$3,$4,$5)
 `, user.Id, name, prikey.String(), deviceNum, strings.Join(allowedIps, ","))
 
 		if err != nil {
+			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
@@ -293,6 +296,7 @@ values ($1,$2,$3,$4,$5)
 
 		peerIp, _ := h.wg.AllocateIP(deviceNum)
 		if err != nil {
+			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
@@ -302,6 +306,7 @@ values ($1,$2,$3,$4,$5)
 
 		peer, err := generatePeerConfig(device, peerIp)
 		if err != nil {
+			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
