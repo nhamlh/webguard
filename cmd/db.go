@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"log"
 
-	"github.com/nhamlh/wg-dash/pkg/db"
+	"github.com/nhamlh/webguard/pkg/db"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/bcrypt"

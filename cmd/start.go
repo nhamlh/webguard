@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nhamlh/wg-dash/pkg/config"
-	"github.com/nhamlh/wg-dash/pkg/db"
-	"github.com/nhamlh/wg-dash/pkg/sso"
-	"github.com/nhamlh/wg-dash/pkg/web"
-	"github.com/nhamlh/wg-dash/pkg/wg"
+	"github.com/nhamlh/webguard/pkg/config"
+	"github.com/nhamlh/webguard/pkg/db"
+	"github.com/nhamlh/webguard/pkg/sso"
+	"github.com/nhamlh/webguard/pkg/web"
+	"github.com/nhamlh/webguard/pkg/wg"
 	"github.com/spf13/cobra"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -21,7 +21,7 @@ func newStartCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start wg-dash server",
+		Short: "Start Webguard server",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfgFile, err := cmd.Flags().GetString("config")
 			if err != nil {
