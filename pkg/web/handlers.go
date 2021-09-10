@@ -54,9 +54,18 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Get help section. helps is a list because
+	// a param might appears multiple times in the url
+	helps := r.URL.Query()["help"]
+	var help string
+	if len(helps) > 0 {
+		help = helps[0]
+	}
+
 	data := templateData{
 		"user":    user,
 		"devices": devStatus,
+		"help":    help,
 	}
 	renderTemplate("index", data, w)
 }
