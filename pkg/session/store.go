@@ -9,13 +9,15 @@ import (
 )
 
 type Store struct {
-	Name     string
-	sessions []Session
+	Name string
+	// store session as a map to its Id for easier management
+	sessions map[string]Session
 }
 
 func NewSessionStore() *Store {
 	return &Store{
-		Name: "Session",
+		Name:     "Session",
+		sessions: map[string]Session{},
 	}
 }
 
@@ -31,20 +33,18 @@ func (st *Store) Get(r *http.Request) (*Session, bool) {
 		return &Session{}, false
 	}
 
-	var session Session
-	for _, se := range st.sessions {
-		if se.Id == string(id) {
-			if se.IsExpired() {
-				//TODO: Also remove expired session from store
-				return &Session{}, false
-			} else {
-				return &se, true
-			}
+	s, found := st.sessions[string(id)]
+	if found {
+		if s.IsExpired() {
+			//TODO: Also remove expired session from store
+			return &Session{}, false
+		} else {
+			return &s, true
 		}
 
 	}
 
-	return &session, false
+	return &s, false
 }
 
 func (st *Store) New() *Session {
@@ -66,18 +66,21 @@ func (st *Store) New() *Session {
 
 // Destroy removes a session from the store and also invalidate the \\
 // corresponding cookie
-func (st *Store) Destroy(s Session, w *http.ResponseWriter) {
-	http.SetCookie(*w, &http.Cookie{
+func (st *Store) Destroy(s Session, w http.ResponseWriter) {
+	delete(st.sessions, s.Id)
+
+	http.SetCookie(w, &http.Cookie{
 		Name:   st.Name,
 		Value:  "",
 		MaxAge: -1,
+		Path:   "/",
 	})
 }
 
 // Save inserts a session into the store and also set a cookie to the response
-func (st *Store) Save(s *Session, w *http.ResponseWriter) {
-	st.sessions = append(st.sessions, *s)
-	http.SetCookie(*w, &s.Cookie)
+func (st *Store) Save(s Session, w http.ResponseWriter) {
+	st.sessions[s.Id] = s
+	http.SetCookie(w, &s.Cookie)
 }
 
 type Session struct {

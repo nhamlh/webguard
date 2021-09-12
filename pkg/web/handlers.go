@@ -107,7 +107,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		session := store.New()
 		session.Values["user"] = user
 
-		store.Save(session, &w)
+		store.Save(*session, w)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
@@ -193,7 +193,7 @@ values($1, "", 0, 1)`, email)
 		session := store.New()
 		session.Values["user"] = user
 
-		store.Save(session, &w)
+		store.Save(*session, w)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
@@ -204,7 +204,7 @@ values($1, "", 0, 1)`, email)
 func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		store.Destroy(session.Session{}, &w)
+		store.Destroy(session.Session{}, w)
 		http.Redirect(w, r, r.Referer(), http.StatusFound)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
