@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/nhamlh/webguard/pkg/config"
-	"github.com/nhamlh/webguard/pkg/db"
+	models "github.com/nhamlh/webguard/pkg/db"
 	"github.com/nhamlh/webguard/pkg/sso"
 	"github.com/nhamlh/webguard/pkg/web"
 	"github.com/nhamlh/webguard/pkg/wg"
@@ -38,13 +38,15 @@ func newStartCmd() *cobra.Command {
 
 			cfg.Wireguard.Host = cfg.Hostname
 
+			db := models.InitDb(cfg.DbPath)
+
 			wgInterface, err := wg.LoadDevice(cfg.Wireguard)
 			if err != nil {
 				log.Fatal(fmt.Errorf("Cannot load Wireguard interface: %v", err))
 			}
 
-			var peers []db.Device
-			db.DB.Select(&peers, "SELECT * FROM devices")
+			var peers []models.Device
+			db.Select(&peers, "SELECT * FROM devices")
 
 			for _, p := range peers {
 				peerIP, err := wgInterface.AllocateIP(p.Num)
@@ -84,7 +86,7 @@ func newStartCmd() *cobra.Command {
 				log.Fatal(fmt.Errorf("Cannot configure SSO provider: %v", err))
 			}
 
-			router := web.NewRouter(wgInterface, op)
+			router := web.NewRouter(db, wgInterface, op)
 
 			srv := &http.Server{
 				Handler: router,

@@ -3,11 +3,12 @@ package web
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/sso"
-	"github.com/nhamlh/webguard/pkg/wg"
+	wireguard "github.com/nhamlh/webguard/pkg/wg"
 )
 
-func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {
+func NewRouter(db *sqlx.DB, wgInt *wireguard.Device, p *sso.Oauth2Provider) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
@@ -15,7 +16,7 @@ func NewRouter(wgInt *wg.Device, p *sso.Oauth2Provider) *chi.Mux {
 		loginUrl: "/login",
 	}
 
-	h := NewHandlers(wgInt, p)
+	h := NewHandlers(db, wgInt, p)
 
 	router.Get("/", lm.wrap(h.Index))
 
