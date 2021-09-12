@@ -29,7 +29,7 @@ func (lm *loginManager)wrap(h http.HandlerFunc) http.HandlerFunc {
 		var user db.User
 		err := db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", session.Value)
 		if err != nil || user == (db.User{}) {
-			http.Redirect(w, r, lm.loginUrl, 301)
+			http.Redirect(w, r, lm.loginUrl, http.StatusFound)
 			return
 		}
 
