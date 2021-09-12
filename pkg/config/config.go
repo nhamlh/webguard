@@ -8,6 +8,16 @@ import (
 
 // ClientId:     "client id",
 // ClientSecret: "client secret",
+
+// github ClientId:     "e52c25ec8117d00eacfa",
+// github ClientSecret: "6d79ea3b83da22578ce52fc234954234916e7fea",
+// gitlab ClientId:     "6a9c2ebe3cf9ff880b1fa85ed4fbdd37322116c8f528940ab3641660c7ce063c",
+// gitlab ClientSecret: "dd46ba1c366986726795e41bd0e4663d6503369c24f7df137c289c5b4f70ae7a",
+// Provider:     "okta",
+// ClientId:     "0oa1pdcc3haxpJuGr5d7",
+// ClientSecret: "_8uAc-mhWf1xIopyy15m85-_osDo8_i2eFUIG7le",
+// ProviderOpts: map[string]string{"domain": "dev-30186313.okta.com"},
+
 var (
 	DefaultConfig = Config{
 		DbPath:   "./webguard.db",
@@ -16,16 +26,23 @@ var (
 			Scheme:     "http",
 			ListenPort: 8080,
 			SSO: SSOConfig{
-				Provider:     "google",
-				ClientId:     "",
-				ClientSecret: "",
+				Provider: "gitlab",
+				// gitlab
+				ClientId:     "6a9c2ebe3cf9ff880b1fa85ed4fbdd37322116c8f528940ab3641660c7ce063c",
+				ClientSecret: "dd46ba1c366986726795e41bd0e4663d6503369c24f7df137c289c5b4f70ae7a",
+				// github
+				// ClientId:     "e52c25ec8117d00eacfa",
+				// ClientSecret: "6d79ea3b83da22578ce52fc234954234916e7fea",
+				// google
+				// ClientId:     "95881753105-41nshnkv2b5mi0s4gbi2tvios135fk29.apps.googleusercontent.com",
+				// ClientSecret: "e_3Ylg1jRhI0ooq6-xErj__q",
 			},
 		},
 		Wireguard: WireguardConfig{
 			Name:       "webguard",
 			ListenPort: 51820,
 			PrivateKey: "ANbdTCP22uZP3AzTdan2v6qXGRcdZRngkno0PnCPlkg=",
-			Cidr:       "192.168.0.0/29",
+			Cidr:       "192.168.0.0/24",
 			PeerRoutes: []string{"0.0.0.0/0"},
 		},
 	}

@@ -20,6 +20,11 @@ type User struct {
 	IsAmdin  bool           `db:"is_admin"`
 }
 
+func (u *User) All()     {}
+func (u *User) ById()    {}
+func (u *User) ByEmail() {}
+func (u *User) Save()    {}
+
 type Device struct {
 	Id         int        `db:"id"`
 	UserId     int        `db:"user_id"`

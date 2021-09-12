@@ -2,33 +2,32 @@ package web
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
+	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/db"
 	"github.com/nhamlh/webguard/pkg/session"
 	"github.com/nhamlh/webguard/pkg/sso"
 	"github.com/nhamlh/webguard/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-	"log"
 )
 
 var store = session.NewSessionStore()
 
 type Handlers struct {
+	db *sqlx.DB
 	wg *wg.Device
 	op *sso.Oauth2Provider
 }
 
-func NewHandlers(wgInt *wg.Device, sp *sso.Oauth2Provider) Handlers {
-	return Handlers{
-		wg: wgInt,
-		op: sp,
-	}
+func NewHandlers(db *sqlx.DB, wgInt *wg.Device, sp *sso.Oauth2Provider) Handlers {
+	return Handlers{db: db, wg: wgInt, op: sp}
 }
 
 func (h *Handlers) Void(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +39,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	user := s.Values["user"].(db.User)
 
 	var devices []db.Device
-	db.DB.Select(&devices, "SELECT * FROM devices WHERE user_id=$1", user.Id)
+	h.db.Select(&devices, "SELECT * FROM devices WHERE user_id=$1", user.Id)
 
 	var devStatus []map[string]string
 	for _, dev := range devices {
@@ -89,7 +88,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 
 		var user db.User
-		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+		h.db.Get(&user, "SELECT * FROM users WHERE email=$1", email)
 
 		err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
 
@@ -158,11 +157,11 @@ func (h *Handlers) OauthCallback(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var user db.User
-		db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+		h.db.Get(&user, "SELECT * FROM users WHERE email=$1", email)
 
 		// Insert user into database if nonexist
 		if user == (db.User{}) {
-			_, err = db.DB.Exec(`
+			_, err = h.db.Exec(`
 insert into
 users(email,password,is_admin,auth_type)
 values($1, "", 0, 1)`, email)
@@ -178,7 +177,7 @@ values($1, "", 0, 1)`, email)
 			}
 
 			// let's try again
-			db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", email)
+			h.db.Get(&user, "SELECT * FROM users WHERE email=$1", email)
 			if user == (db.User{}) {
 				w.WriteHeader(http.StatusInternalServerError)
 				renderTemplate("login", templateData{"errors": []string{
@@ -239,7 +238,7 @@ func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var devices []db.Device
-		db.DB.Select(&devices, `SELECT * FROM devices`)
+		h.db.Select(&devices, `SELECT * FROM devices`)
 		deviceNum := getAvailNum(devices)
 
 		var allowedIps []string
@@ -247,7 +246,7 @@ func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 			allowedIps = append(allowedIps, pr.String())
 		}
 
-		_, err = db.DB.Exec(`
+		_, err = h.db.Exec(`
 INSERT INTO
 devices(user_id, name, private_key, num, allowed_ips)
 values ($1,$2,$3,$4,$5)
@@ -263,7 +262,7 @@ values ($1,$2,$3,$4,$5)
 		}
 
 		var device db.Device
-		db.DB.Get(&device, `SELECT * FROM devices where private_key=$1`, prikey.String())
+		h.db.Get(&device, `SELECT * FROM devices where private_key=$1`, prikey.String())
 
 		peerIp, _ := h.wg.AllocateIP(deviceNum)
 		if err != nil {
@@ -302,7 +301,7 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 		user := session.Values["user"].(db.User)
 
 		var device db.Device
-		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", id, user.Id)
+		h.db.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", id, user.Id)
 
 		if device == (db.Device{}) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -338,7 +337,7 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		db.DB.Exec("DELETE FROM devices WHERE id=$1", id)
+		h.db.Exec("DELETE FROM devices WHERE id=$1", id)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
@@ -353,7 +352,7 @@ func (h *Handlers) DeviceDownload(w http.ResponseWriter, r *http.Request) {
 		user := session.Values["user"].(db.User)
 
 		var device db.Device
-		db.DB.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", chi.URLParam(r, "id"), user.Id)
+		h.db.Get(&device, "SELECT * FROM devices WHERE id=$1 AND user_id=$2", chi.URLParam(r, "id"), user.Id)
 
 		if device == (db.Device{}) {
 			w.WriteHeader(http.StatusBadRequest)
