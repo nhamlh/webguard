@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
+//FIXME: This implementation has a drawback:
+// Expired sessions might be orphaned and build up
+// in the store.
 type Store struct {
 	Name string
 	// store session as a map to its Id for easier management
@@ -36,7 +39,7 @@ func (st *Store) Get(r *http.Request) (*Session, bool) {
 	s, found := st.sessions[string(id)]
 	if found {
 		if s.IsExpired() {
-			//TODO: Also remove expired session from store
+			delete(st.sessions, s.Id)
 			return &Session{}, false
 		} else {
 			return &s, true
@@ -57,7 +60,7 @@ func (st *Store) New() *Session {
 		Cookie: http.Cookie{
 			Name:     st.Name,
 			Value:    base64.StdEncoding.EncodeToString([]byte(id)),
-			MaxAge:   int(time.Second * 60),
+			MaxAge:   3600 * 24, // Expire in one day
 			Path:     "/",
 			HttpOnly: true,
 		},
