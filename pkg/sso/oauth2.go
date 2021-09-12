@@ -12,7 +12,6 @@ import (
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/gitlab"
 	"golang.org/x/oauth2/google"
-	"log"
 )
 
 type Oauth2Provider struct {
@@ -70,9 +69,6 @@ func (p *Oauth2Provider) Email(token oauth2.Token) string {
 	if err != nil {
 		return ""
 	}
-
-	log.Println(token.AccessToken)
-	log.Println(string(rawResp))
 
 	var jsonObj map[string]interface{}
 	if err = json.Unmarshal(rawResp, &jsonObj); err != nil {
