@@ -98,7 +98,7 @@ func (s *Session) IsExpired() bool {
 		return true
 	}
 
-	expiredTime := s.CreatedAt.Add(time.Duration(s.Cookie.MaxAge))
+	expiredTime := s.CreatedAt.Add(time.Second * time.Duration(s.Cookie.MaxAge))
 
 	if time.Now().After(expiredTime) {
 		return true
