@@ -11,8 +11,9 @@ var (
 		DbPath:   "./webguard.db",
 		Hostname: "localhost",
 		Web: WebConfig{
-			Scheme:     "http",
-			ListenPort: 8080,
+			Scheme:  "http",
+			Address: "127.0.0.1",
+			Port:    8080,
 		},
 		Wireguard: WireguardConfig{
 			Name:       "webguard",
@@ -48,9 +49,10 @@ func Load(configFile string) *Config {
 }
 
 type WebConfig struct {
-	Scheme     string    `json:"scheme"`
-	ListenPort int       `json:"listen_port"`
-	SSO        SSOConfig `json:"sso"`
+	Scheme  string    `json:"scheme"`
+	Address string    `json:"address"`
+	Port    int       `json:"port"`
+	SSO     SSOConfig `json:"sso"`
 }
 
 type SSOConfig struct {

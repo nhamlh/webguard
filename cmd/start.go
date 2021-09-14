@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/nhamlh/webguard/pkg/config"
@@ -71,10 +70,10 @@ func newStartCmd() *cobra.Command {
 				log.Fatal(fmt.Errorf("Cannot configure SSO provider %s: %v", cfg.Web.SSO.Provider, err))
 			}
 
-			redirectURL := fmt.Sprintf("%s://%s:%s/login/oauth/callback",
+			redirectURL := fmt.Sprintf("%s://%s:%d/login/oauth/callback",
 				cfg.Web.Scheme,
 				cfg.Hostname,
-				strconv.Itoa(cfg.Web.ListenPort))
+				cfg.Web.Port)
 
 			op, err := sso.NewOauth2Provider(
 				cfg.Web.SSO.ClientId,
@@ -90,13 +89,13 @@ func newStartCmd() *cobra.Command {
 
 			srv := &http.Server{
 				Handler: router,
-				Addr:    fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Web.ListenPort),
+				Addr:    fmt.Sprintf("%s:%d", cfg.Web.Address, cfg.Web.Port),
 				// Good practice: enforce timeouts for servers you create!
 				WriteTimeout: 15 * time.Second,
 				ReadTimeout:  15 * time.Second,
 			}
 
-			log.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Hostname, cfg.Web.ListenPort))
+			log.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Web.Address, cfg.Web.Port))
 			err = srv.ListenAndServe()
 			if err != nil {
 				log.Fatal(fmt.Errorf("Web server failed: %v", err))
