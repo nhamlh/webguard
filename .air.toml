@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/webgard ./cmd"
+  cmd = "go build -o ./tmp/webguard ./cmd"
   bin = "./tmp/main"
   full_bin = "sudo ./tmp/webguard start -c ./dev.config.json"
   delay = 1000
