@@ -3,6 +3,7 @@ package wg
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 
@@ -13,8 +14,8 @@ import (
 )
 
 type Device struct {
+	Name     string
 	c        wgctrl.Client
-	dev      wgtypes.Device
 	Endpoint string
 	CIDR     net.IPNet
 	// Routes to push to peers
@@ -43,9 +44,8 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 		return nil, fmt.Errorf("Cannot initialize client: %v", err)
 	}
 
-	dev, err := client.Device(cfg.Name)
-	if err != nil {
-		return nil, fmt.Errorf("Client cannot get device %s: %v", cfg.Name, err)
+	if _, err := client.Device(cfg.Name); err != nil {
+		return nil, fmt.Errorf("Cannot find wireguard interface %s: %v", cfg.Name, err)
 	}
 
 	key, err := wgtypes.ParseKey(cfg.PrivateKey)
@@ -78,9 +78,9 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 	}
 
 	return &Device{
+		Name:       cfg.Name,
 		c:          *client,
 		Endpoint:   cfg.Host + ":" + strconv.Itoa(cfg.ListenPort),
-		dev:        *dev,
 		CIDR:       *ipnet,
 		PeerRoutes: peerRoutes,
 		peerIps:    ips,
@@ -88,11 +88,7 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 }
 
 func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
-
-	refreshedDev, _ := d.c.Device(d.dev.Name)
-	d.dev = *refreshedDev
-
-	for _, p := range d.dev.Peers {
+	for _, p := range d.wg().Peers {
 		if p.PublicKey == pubkey {
 			return &p, true
 		}
@@ -100,17 +96,23 @@ func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
 	return &wgtypes.Peer{}, false
 }
 
-func (d *Device) AddPeer(peer wgtypes.PeerConfig) bool {
+func (d *Device) AddPeer(peer wgtypes.PeerConfig) error {
 	cfg := wgtypes.Config{
 		Peers: []wgtypes.PeerConfig{peer},
 	}
 
-	err := d.c.ConfigureDevice(d.dev.Name, cfg)
-	if err != nil {
-		return false
+	// Abort if peer exists with different config (AllowedIPs)
+	for _, p := range d.wg().Peers {
+		log.Println("Adding peer", peer.AllowedIPs, p.AllowedIPs)
+
+		if p.PublicKey == peer.PublicKey {
+			if !eqIps(p.AllowedIPs, peer.AllowedIPs) {
+				return errors.New("Peer exists with different AllowedIPs")
+			}
+		}
 	}
 
-	return true
+	return d.c.ConfigureDevice(d.Name, cfg)
 }
 
 func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
@@ -128,7 +130,7 @@ func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
 		Peers: []wgtypes.PeerConfig{peerCfg},
 	}
 
-	err := d.c.ConfigureDevice(d.dev.Name, cfg)
+	err := d.c.ConfigureDevice(d.Name, cfg)
 	if err != nil {
 		return false
 	}
@@ -137,7 +139,7 @@ func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
 }
 
 func (d *Device) Publickey() wgtypes.Key {
-	return d.dev.PublicKey
+	return d.wg().PublicKey
 }
 
 func (d *Device) AllocateIP(num int) (net.IPNet, error) {
@@ -170,6 +172,22 @@ func inc(ip net.IP) {
 			break
 		}
 	}
+}
+
+// wg returns a fresh wgtypes.Device
+//
+// wgtypes.Device doesn't update its state when the underlying
+// interface changes (peers added/deleted, etc) hence maintaining
+// a cached of is useless. We have to call wg() everytime we need
+// to access the interface.
+func (d *Device) wg() *wgtypes.Device {
+	dev, err := d.c.Device(d.Name)
+
+	if err != nil {
+		log.Fatal(fmt.Errorf("Cannot find wireguard interface %s: %v", d.Name, err))
+	}
+
+	return dev
 }
 
 type wgLink struct {
@@ -219,4 +237,45 @@ func initWgInterface(name string, ip net.IP) error {
 	netlink.AddrAdd(l, addr)
 
 	return nil
+}
+
+// eqIps returns true if two array IPs are equal
+//
+// each pair of IP must be exact same. We don't check
+// CIDR inclusive
+func eqIps(a, b []net.IPNet) bool {
+	eq := func(x, y net.IPNet) bool {
+		xo, xb := x.Mask.Size()
+		yo, yb := y.Mask.Size()
+
+		if (xo != yo) || (xb != yb) {
+			return false
+		}
+
+		if !x.IP.Equal(y.IP) {
+			return false
+		}
+
+		return true
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for _, i := range a {
+		matched := false
+
+		for _, j := range b {
+			if eq(i, j) {
+				matched = true
+			}
+		}
+
+		if !matched {
+			return false
+		}
+	}
+
+	return true
 }

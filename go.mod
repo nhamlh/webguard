@@ -9,6 +9,8 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/mattn/go-sqlite3 v1.14.8
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.16.0
 	github.com/pressly/goose/v3 v3.1.0
 	github.com/spf13/cobra v1.2.1
 	github.com/vishvananda/netlink v1.1.0

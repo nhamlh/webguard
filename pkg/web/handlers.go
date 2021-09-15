@@ -264,7 +264,7 @@ values ($1,$2,$3,$4,$5)
 		var device db.Device
 		h.db.Get(&device, `SELECT * FROM devices where private_key=$1`, prikey.String())
 
-		peerIp, _ := h.wg.AllocateIP(deviceNum)
+		peerIp, err := h.wg.AllocateIP(deviceNum)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -284,7 +284,14 @@ values ($1,$2,$3,$4,$5)
 			return
 		}
 
-		h.wg.AddPeer(peer)
+		if err = h.wg.AddPeer(peer); err != nil {
+			log.Println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate("device", templateData{
+				"user":   user,
+				"errors": []string{"Cannot create device [E104]"}}, w)
+			return
+		}
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
