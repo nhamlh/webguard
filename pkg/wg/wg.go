@@ -103,8 +103,6 @@ func (d *Device) AddPeer(peer wgtypes.PeerConfig) error {
 
 	// Abort if peer exists with different config (AllowedIPs)
 	for _, p := range d.wg().Peers {
-		log.Println("Adding peer", peer.AllowedIPs, p.AllowedIPs)
-
 		if p.PublicKey == peer.PublicKey {
 			if !eqIps(p.AllowedIPs, peer.AllowedIPs) {
 				return errors.New("Peer exists with different AllowedIPs")

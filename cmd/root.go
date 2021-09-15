@@ -11,8 +11,8 @@ func main() {
 
 	rootCmd.PersistentFlags().StringP("config", "c", "", "Path to config file")
 
-	rootCmd.AddCommand(newStartCmd())
-	rootCmd.AddCommand(newDbCmd())
+	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(dbCmd)
 	rootCmd.AddCommand(genConfigCmd)
 
 	rootCmd.Execute()

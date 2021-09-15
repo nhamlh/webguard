@@ -9,48 +9,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDbCmd() *cobra.Command {
-
-	cmd := &cobra.Command{
-		Use:   "db",
-		Short: "Database related operations",
-	}
-
-	cmd.AddCommand(newDBMigrateCmd())
-
-	return cmd
+func init() {
+	dbCmd.AddCommand(dbMigrateCmd)
 }
 
-func newDBMigrateCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "migrate",
-		Short: "Migrate database schema",
-		Run: func(cmd *cobra.Command, args []string) {
-			cfgFile, err := cmd.Flags().GetString("config")
-			if err != nil {
-				log.Fatal(err)
-			}
+var dbCmd = &cobra.Command{
+	Use:   "db",
+	Short: "Database related operations",
+}
 
-			var cfg *config.Config
-			if cfgFile == "" {
-				cfg = &config.DefaultConfig
-			} else {
-				cfg = config.Load(cfgFile)
-			}
+var dbMigrateCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "Migrate database schema",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfgFile, err := cmd.Flags().GetString("config")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-			db := models.InitDb(cfg.DbPath)
+		var cfg *config.Config
+		if cfgFile == "" {
+			cfg = &config.DefaultConfig
+		} else {
+			cfg = config.Load(cfgFile)
+		}
 
-			if err := goose.SetDialect("sqlite3"); err != nil {
-				panic(err)
-			}
+		db := models.InitDb(cfg.DbPath)
 
-			goose.SetBaseFS(models.Migrations)
+		if err := goose.SetDialect("sqlite3"); err != nil {
+			panic(err)
+		}
 
-			if err := goose.Up(db.DB, "migrations"); err != nil {
-				panic(err)
-			}
-		},
-	}
+		goose.SetBaseFS(models.Migrations)
 
-	return cmd
+		if err := goose.Up(db.DB, "migrations"); err != nil {
+			panic(err)
+		}
+	},
 }
