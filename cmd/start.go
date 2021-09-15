@@ -47,19 +47,23 @@ func newStartCmd() *cobra.Command {
 			var peers []models.Device
 			db.Select(&peers, "SELECT * FROM devices")
 
-			for _, p := range peers {
-				peerIP, err := wgInterface.AllocateIP(p.Num)
+			for _, peer := range peers {
+				peerIP, err := wgInterface.AllocateIP(peer.Num)
 				if err != nil {
-					log.Fatal(err)
+					log.Println(fmt.Errorf("Cannot add peer %s: Failed to allocate IP from device number: %v", peer.PrivateKey.PublicKey().String(), err))
+					break
 				}
 
-				peer := wgtypes.PeerConfig{
-					PublicKey:         p.PrivateKey.PublicKey(),
+				peerCfg := wgtypes.PeerConfig{
+					PublicKey:         peer.PrivateKey.PublicKey(),
 					AllowedIPs:        []net.IPNet{peerIP},
 					ReplaceAllowedIPs: true,
 				}
-				if added := wgInterface.AddPeer(peer); added {
-					log.Println("Added peer", p.PrivateKey.PublicKey())
+				if err = wgInterface.AddPeer(peerCfg); err != nil {
+					log.Println(fmt.Errorf("Cannot add peer %s: %v", peerCfg.PublicKey.String(), err))
+					break
+				} else {
+					// log.Println(fmt.Sprintf("Added peer %s", peer.PrivateKey.PublicKey()))
 				}
 			}
 
