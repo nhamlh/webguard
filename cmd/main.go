@@ -13,6 +13,7 @@ func main() {
 
 	rootCmd.AddCommand(newStartCmd())
 	rootCmd.AddCommand(newDbCmd())
+	rootCmd.AddCommand(genConfigCmd)
 
 	rootCmd.Execute()
 }
