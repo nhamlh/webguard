@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
@@ -15,7 +14,6 @@ import (
 	"github.com/nhamlh/webguard/pkg/sso"
 	"github.com/nhamlh/webguard/pkg/wg"
 	"golang.org/x/crypto/bcrypt"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 var store = session.NewSessionStore()
@@ -227,33 +225,13 @@ func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		prikey, err := wgtypes.GeneratePrivateKey()
-		if err != nil {
-			log.Println(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{
-				"user":   user,
-				"errors": []string{err.Error()}}, w)
-			return
-		}
-
 		var devices []db.Device
 		h.db.Select(&devices, `SELECT * FROM devices`)
-		deviceNum := getAvailNum(devices)
+		devNum := getAvailNum(devices)
 
-		var allowedIps []string
-		for _, pr := range h.wg.PeerRoutes {
-			allowedIps = append(allowedIps, pr.String())
-		}
-
-		_, err = h.db.Exec(`
-INSERT INTO
-devices(user_id, name, private_key, num, allowed_ips)
-values ($1,$2,$3,$4,$5)
-`, user.Id, name, prikey.String(), deviceNum, strings.Join(allowedIps, ","))
-
+		dev, err := db.NewDevice(user.Id, name, devNum, h.wg.PeerRoutes)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println(fmt.Errorf("Cannot create device for user %d: %v", user.Id, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
@@ -261,12 +239,8 @@ values ($1,$2,$3,$4,$5)
 			return
 		}
 
-		var device db.Device
-		h.db.Get(&device, `SELECT * FROM devices where private_key=$1`, prikey.String())
-
-		peerIp, err := h.wg.AllocateIP(deviceNum)
-		if err != nil {
-			log.Println(err.Error())
+		if err := dev.Save(*h.db); err != nil {
+			log.Println(fmt.Errorf("Cannot save device %s to db: %v", dev.PrivateKey.PublicKey(), err))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
@@ -274,22 +248,12 @@ values ($1,$2,$3,$4,$5)
 			return
 		}
 
-		peer, err := generatePeerConfig(device, peerIp)
-		if err != nil {
-			log.Println(err.Error())
+		if err := dev.AddTo(h.wg); err != nil {
+			log.Println(fmt.Errorf("Cannot add device %s to wg interface: %v", dev.PrivateKey.PublicKey(), err))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
 				"user":   user,
-				"errors": []string{"Cannot create device [E103]"}}, w)
-			return
-		}
-
-		if err = h.wg.AddPeer(peer); err != nil {
-			log.Println(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate("device", templateData{
-				"user":   user,
-				"errors": []string{"Cannot create device [E104]"}}, w)
+				"errors": []string{"Device created but can't be activated [E103]"}}, w)
 			return
 		}
 
@@ -314,37 +278,25 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			renderTemplate("error", templateData{
 				"user":   user,
-				"errors": []string{"Cannot delete such device"}}, w)
+				"errors": []string{"Cannot delete such device [101]"}}, w)
 			return
 		}
 
-		_, found := h.wg.GetPeer(device.PrivateKey.PublicKey())
-		if !found {
+		if err := device.RemoveFrom(h.wg); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			renderTemplate("error", templateData{
-				"user": user,
-				"errors": []string{
-					"Cannot find peer from interface",
-					device.PrivateKey.PublicKey().String(),
-				},
-			}, w)
+				"user":   user,
+				"errors": []string{"Cannot delete such device [102]"}}, w)
 			return
 		}
 
-		removed := h.wg.RemovePeer(device.PrivateKey.PublicKey())
-		if !removed {
+		if _, err := h.db.Exec("DELETE FROM devices WHERE id=$1", id); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			renderTemplate("error", templateData{
-				"user": user,
-				"errors": []string{
-					"Cannot remove peer from interface",
-					device.PrivateKey.PublicKey().String(),
-				},
-			}, w)
+				"user":   user,
+				"errors": []string{"Cannot delete such device [103]"}}, w)
 			return
 		}
-
-		h.db.Exec("DELETE FROM devices WHERE id=$1", id)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
@@ -369,7 +321,7 @@ func (h *Handlers) DeviceDownload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clientCfg := generateClientConfig(h.wg, device)
+		clientCfg := device.GenClientConfig(h.wg)
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Content-Disposition", "attachment; filename=wg.conf")
