@@ -8,7 +8,7 @@ import (
 	wireguard "github.com/nhamlh/webguard/pkg/wg"
 )
 
-func NewRouter(db *sqlx.DB, wgInt *wireguard.Device, p *sso.Oauth2Provider) *chi.Mux {
+func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 

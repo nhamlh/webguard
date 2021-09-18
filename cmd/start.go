@@ -37,7 +37,7 @@ var startCmd = &cobra.Command{
 
 		db := models.InitDb(cfg.DbPath)
 
-		wgInterface, err := wg.LoadDevice(cfg.Wireguard)
+		wgInterface, err := wg.LoadInterface(cfg.Wireguard)
 		if err != nil {
 			log.Fatal(fmt.Errorf("Cannot load Wireguard interface: %v", err))
 		}

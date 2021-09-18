@@ -43,7 +43,7 @@ func generatePeerConfig(d db.Device, peerIp net.IPNet) (wgtypes.PeerConfig, erro
 	}, nil
 }
 
-func generateClientConfig(wgInt *wg.Device, d db.Device) string {
+func generateClientConfig(wgInt *wg.Interface, d db.Device) string {
 	t, _ := template.New("clientConfig").Parse(`
 [Interface]
 PrivateKey = {{ .PrivateKey }}

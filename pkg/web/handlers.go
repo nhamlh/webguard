@@ -22,11 +22,11 @@ var store = session.NewSessionStore()
 
 type Handlers struct {
 	db *sqlx.DB
-	wg *wg.Device
+	wg *wg.Interface
 	op *sso.Oauth2Provider
 }
 
-func NewHandlers(db *sqlx.DB, wgInt *wg.Device, sp *sso.Oauth2Provider) Handlers {
+func NewHandlers(db *sqlx.DB, wgInt *wg.Interface, sp *sso.Oauth2Provider) Handlers {
 	return Handlers{db: db, wg: wgInt, op: sp}
 }
 

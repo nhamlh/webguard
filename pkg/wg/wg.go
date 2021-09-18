@@ -13,7 +13,7 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-type Device struct {
+type Interface struct {
 	Name     string
 	c        wgctrl.Client
 	Endpoint string
@@ -23,7 +23,7 @@ type Device struct {
 	peerIps    []net.IP // a cache of allocatable IPs for peers
 }
 
-func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
+func LoadInterface(cfg config.WireguardConfig) (*Interface, error) {
 	ip, ipnet, err := net.ParseCIDR(cfg.Cidr)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot parse CIDR: %v", err)
@@ -77,7 +77,7 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 		return nil, errors.New("Cannot configure wireguard interface: there's no routes to push to peers")
 	}
 
-	return &Device{
+	return &Interface{
 		Name:       cfg.Name,
 		c:          *client,
 		Endpoint:   cfg.Host + ":" + strconv.Itoa(cfg.ListenPort),
@@ -87,7 +87,7 @@ func LoadDevice(cfg config.WireguardConfig) (*Device, error) {
 	}, nil
 }
 
-func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
+func (d *Interface) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
 	for _, p := range d.wg().Peers {
 		if p.PublicKey == pubkey {
 			return &p, true
@@ -96,7 +96,7 @@ func (d *Device) GetPeer(pubkey wgtypes.Key) (*wgtypes.Peer, bool) {
 	return &wgtypes.Peer{}, false
 }
 
-func (d *Device) AddPeer(peer wgtypes.PeerConfig) error {
+func (d *Interface) AddPeer(peer wgtypes.PeerConfig) error {
 	cfg := wgtypes.Config{
 		Peers: []wgtypes.PeerConfig{peer},
 	}
@@ -113,7 +113,7 @@ func (d *Device) AddPeer(peer wgtypes.PeerConfig) error {
 	return d.c.ConfigureDevice(d.Name, cfg)
 }
 
-func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
+func (d *Interface) RemovePeer(pubkey wgtypes.Key) bool {
 	peer, found := d.GetPeer(pubkey)
 	if !found {
 		return false
@@ -136,11 +136,11 @@ func (d *Device) RemovePeer(pubkey wgtypes.Key) bool {
 	return true
 }
 
-func (d *Device) Publickey() wgtypes.Key {
+func (d *Interface) Publickey() wgtypes.Key {
 	return d.wg().PublicKey
 }
 
-func (d *Device) AllocateIP(num int) (net.IPNet, error) {
+func (d *Interface) AllocateIP(num int) (net.IPNet, error) {
 	if num < 0 || num > len(d.peerIps) {
 		return net.IPNet{}, errors.New("Cannot allocate IP: Out of bound")
 	}
@@ -178,7 +178,7 @@ func inc(ip net.IP) {
 // interface changes (peers added/deleted, etc) hence maintaining
 // a cached of is useless. We have to call wg() everytime we need
 // to access the interface.
-func (d *Device) wg() *wgtypes.Device {
+func (d *Interface) wg() *wgtypes.Device {
 	dev, err := d.c.Device(d.Name)
 
 	if err != nil {
