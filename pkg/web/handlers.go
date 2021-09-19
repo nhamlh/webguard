@@ -304,7 +304,9 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handlers) DeviceDownload(w http.ResponseWriter, r *http.Request) {
+// DeviceInstall renders installation page for a device, also generates qrcode
+// and client configuration file
+func (h *Handlers) DeviceInstall(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		session, _ := store.Get(r)
@@ -317,16 +319,27 @@ func (h *Handlers) DeviceDownload(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			renderTemplate("error", templateData{
 				"user":   user,
-				"errors": []string{"Cannot delete such device"}}, w)
+				"errors": []string{"Cannot load such device"}}, w)
 			return
 		}
 
-		clientCfg := device.GenClientConfig(h.wg)
+		downloads := r.URL.Query()["dl"]
+		if len(downloads) > 0 {
+			clientCfg := device.GenClientConfig(h.wg)
 
-		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Content-Disposition", "attachment; filename=wg.conf")
+			w.Header().Set("Content-Type", "text/plain")
+			w.Header().Set("Content-Disposition", "attachment; filename=wg.conf")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(clientCfg))
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(clientCfg))
+		renderTemplate("device_install", templateData{
+			"user":   user,
+			"download_url": fmt.Sprintf("%s?dl=1", r.URL.Path),
+			"qrcode": device.GenQRCode(h.wg)}, w)
+		return
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

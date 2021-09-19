@@ -23,7 +23,7 @@ func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *
 	// Working with devices
 	router.Get("/new_device", lm.wrap(h.DeviceAdd))
 	router.Post("/new_device", lm.wrap(h.DeviceAdd))
-	router.Get("/devices/{id}/download", lm.wrap(h.DeviceDownload))
+	router.Get("/devices/{id}/install", lm.wrap(h.DeviceInstall))
 	router.Get("/devices/{id}/delete", lm.wrap(h.DeviceDelete))
 
 	// Session management

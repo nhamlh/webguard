@@ -95,7 +95,7 @@ func (d *Device) RemoveFrom(wgInf *wg.Interface) error {
 
 // GenQRCode returns base64 encoded qrcode of client config of this device
 func (d *Device) GenQRCode(wgInf *wg.Interface) string {
-	png, err := qrcode.Encode(d.GenClientConfig(wgInf), qrcode.Medium, 128)
+	png, err := qrcode.Encode(d.GenClientConfig(wgInf), qrcode.Medium, 256)
 	if err != nil {
 		return ""
 	}
