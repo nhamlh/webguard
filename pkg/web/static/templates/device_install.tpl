@@ -81,7 +81,7 @@
       <div id="step-three" class="columns is-centered">
         <div class="column has-text-centered">
           <div class="content">
-            <h3>Check you tunnel status</h3>
+            <h3>Check your tunnel status</h3>
             <p>The index page list your created devices and its status, click to return to <a href="/">index page</a>.</p>
           </div>
         </div>
