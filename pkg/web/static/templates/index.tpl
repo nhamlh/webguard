@@ -41,7 +41,7 @@
                         <i class="fas fa-download"></i>
                       </span>
                     </a>
-                    <a class="button is-danger" href="/devices/{{ .id }}/delete">
+                    <a class="button is-danger" href="/devices/{{ .id }}/delete" onclick="return confirmDelete()">
                       <span class="icon">
                         <i class="fas fa-trash-alt"></i>
                       </span>
@@ -157,5 +157,14 @@
     {{ end }}
       </section>
     </div> <!--container-->
+
+
+<script>
+function confirmDelete() {
+  var ans = confirm("Do you really want to delete this device?");
+  return ans;
+}
+</script>
+
   </body>
 </html>
