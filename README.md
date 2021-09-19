@@ -2,6 +2,12 @@
 
 A simple, easy to use web interface for Wireguard. It supports SSO authentication (currently Google, Github, Gitlab, Okta are supported) and SCIM2.0 protocol (in development).
 
+## Some screenshots
+
+![Login page](./screenshots/login.png?raw=true "Login page")
+
+![Main page](./screenshots/index.png?raw=true "Main page")
+
 # Installation
 
 Prerequisites:
