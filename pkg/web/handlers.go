@@ -49,7 +49,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 		devStatus = append(devStatus, map[string]string{
 			"id":       strconv.Itoa(id),
 			"name":     name,
-			"pubkey":   peer.PublicKey.String(),
+			"pubkey":   dev.PrivateKey.PublicKey().String(),
 			"lastSeen": lastSeen,
 		})
 	}

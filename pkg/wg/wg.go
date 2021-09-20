@@ -113,19 +113,19 @@ func (d *Interface) AddPeer(peer wgtypes.PeerConfig) error {
 	return d.c.ConfigureDevice(d.Name, cfg)
 }
 
-func (d *Interface) RemovePeer(pubkey wgtypes.Key) bool {
-	peer, found := d.GetPeer(pubkey)
+func (d *Interface) RemovePeer(peer wgtypes.PeerConfig) bool {
+	p, found := d.GetPeer(peer.PublicKey)
 	if !found {
 		return false
 	}
 
-	peerCfg := wgtypes.PeerConfig{
-		Remove:    true,
-		PublicKey: peer.PublicKey,
+	if !eqIps(peer.AllowedIPs, p.AllowedIPs) {
+		return false
 	}
 
+	peer.Remove = true
 	cfg := wgtypes.Config{
-		Peers: []wgtypes.PeerConfig{peerCfg},
+		Peers: []wgtypes.PeerConfig{peer},
 	}
 
 	err := d.c.ConfigureDevice(d.Name, cfg)

@@ -3,16 +3,18 @@ package db
 import (
 	"bytes"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"text/template"
 
+	"encoding/base64"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/wg"
 	qrcode "github.com/skip2/go-qrcode"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-	"encoding/base64"
 )
 
 func NewDevice(uid int, name string, num int, allowedIps []net.IPNet) (*Device, error) {
@@ -85,10 +87,18 @@ func (d *Device) IsAddedTo(wgInf *wg.Interface) bool {
 
 func (d *Device) RemoveFrom(wgInf *wg.Interface) error {
 	if _, found := wgInf.GetPeer(d.PrivateKey.PublicKey()); !found {
-		return nil
+		return errors.New("Peer not found")
 	}
 
-	wgInf.RemovePeer(d.PrivateKey.PublicKey())
+	peerCfg, err := d.peerConfig(*wgInf)
+	if err != nil {
+		return fmt.Errorf("Cannot remove device from wireguard interface: %v", err)
+	}
+
+	isRemoved := wgInf.RemovePeer(*peerCfg)
+	if ! isRemoved {
+		return fmt.Errorf("Cannot remove device from wireguard interface: %v", err)
+	}
 
 	return nil
 }
