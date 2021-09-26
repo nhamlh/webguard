@@ -23,7 +23,8 @@
               <tr>
                 <th>Name</th>
                 <th>Public key</th>
-                <th>Last seen</th>
+                <th>Status</th>
+                <th>Statistics</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -31,12 +32,23 @@
             <tbody>
               {{ range $i, $d := $.devices }}
               <tr>
-                <td>{{ $d.name }}</td>
-                <td>{{ $d.pubkey }}</td>
-                <td>{{ $d.lastSeen }}</td>
+                <td>{{ $d.dev.Name }}</td>
+                <td>{{ $d.dev.PrivateKey.PublicKey }}</td>
+                <td>{{ $d.stat }}</td>
                 <td>
                   <div>
-                    <a class="button is-primary" href="/devices/{{ .id }}/install">
+                  Last seen: {{ $d.peer.LastHandshakeTime }}
+                  </div>
+                  <div>
+                  Received bytes: {{ $d.peer.ReceiveBytes }}
+                  </div>
+                  <div>
+                  Transmitted bytes: {{ $d.peer.TransmitBytes }}
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <a class="button is-primary" href="/devices/{{ $d.dev.Id }}/install">
                       <span class="icon">
                         <i class="fas fa-tools"></i>
                       </span>
@@ -44,7 +56,7 @@
                         Install
                       </span>
                     </a>
-                    <a class="button is-danger" href="/devices/{{ .id }}/delete" onclick="return confirmDelete()">
+                    <a class="button is-danger" href="/devices/{{ $d.dev.Id }}/delete" onclick="return confirmDelete()">
                       <span class="icon">
                         <i class="fas fa-trash-alt"></i>
                       </span>

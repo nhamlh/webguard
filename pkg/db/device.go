@@ -96,7 +96,7 @@ func (d *Device) RemoveFrom(wgInf *wg.Interface) error {
 	}
 
 	isRemoved := wgInf.RemovePeer(*peerCfg)
-	if ! isRemoved {
+	if !isRemoved {
 		return fmt.Errorf("Cannot remove device from wireguard interface: %v", err)
 	}
 
@@ -158,6 +158,21 @@ func (d *Device) peerConfig(wgInf wg.Interface) (*wgtypes.PeerConfig, error) {
 	}, nil
 }
 
+func (d *Device) Status(wgInf wg.Interface) (Status, wgtypes.Peer) {
+	foundPeer, found := wgInf.GetPeer(d.PrivateKey.PublicKey())
+	if !found {
+		return StatusNotFound, wgtypes.Peer{}
+	}
+
+	thisPeer, _ := d.peerConfig(wgInf)
+
+	if !wg.IpsEqual(thisPeer.AllowedIPs, foundPeer.AllowedIPs) {
+		return StatusConflict, wgtypes.Peer{}
+	}
+
+	return StatusOK, *foundPeer
+}
+
 type PrivateKey struct {
 	wgtypes.Key
 }
@@ -177,4 +192,23 @@ func (p *PrivateKey) Scan(src interface{}) error {
 	*p = PrivateKey{key}
 
 	return nil
+}
+
+type Status int
+
+const (
+	StatusOK       = iota // Device is added to wg
+	StatusNotFound        // Device is not added to wg
+	StatusConflict        // Device is added to wg but has config conflicting
+)
+
+func (s Status) String() string {
+	switch s {
+	case StatusOK:
+		return "OK"
+	case StatusNotFound:
+		return "Not Found"
+	default:
+		return "Conflict"
+	}
 }

@@ -23,8 +23,8 @@ var _ = Describe("eqIps", func() {
 				net.IPNet{IP: net.IP{}, Mask: []byte{255, 255, 255, 0}},
 			}
 
-			Expect(eqIps(a, b)).Should(BeTrue())
-			Expect(eqIps(b, a)).Should(BeTrue())
+			Expect(IpsEqual(a, b)).Should(BeTrue())
+			Expect(IpsEqual(b, a)).Should(BeTrue())
 		})
 	})
 
@@ -36,12 +36,12 @@ var _ = Describe("eqIps", func() {
 			b := []net.IPNet{
 				net.IPNet{IP: net.IP{}, Mask: []byte{255, 255, 255, 128}},
 			}
-			Expect(eqIps(a, b)).Should(BeFalse())
-			Expect(eqIps(b, a)).Should(BeFalse())
+			Expect(IpsEqual(a, b)).Should(BeFalse())
+			Expect(IpsEqual(b, a)).Should(BeFalse())
 
 			b = append(b, net.IPNet{IP: net.IP{}, Mask: []byte{255, 255, 255, 0}})
-			Expect(eqIps(a, b)).Should(BeFalse())
-			Expect(eqIps(b, a)).Should(BeFalse())
+			Expect(IpsEqual(a, b)).Should(BeFalse())
+			Expect(IpsEqual(b, a)).Should(BeFalse())
 		})
 	})
 })

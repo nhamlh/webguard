@@ -104,7 +104,7 @@ func (d *Interface) AddPeer(peer wgtypes.PeerConfig) error {
 	// Abort if peer exists with different config (AllowedIPs)
 	for _, p := range d.wg().Peers {
 		if p.PublicKey == peer.PublicKey {
-			if !eqIps(p.AllowedIPs, peer.AllowedIPs) {
+			if !IpsEqual(p.AllowedIPs, peer.AllowedIPs) {
 				return errors.New("Peer exists with different AllowedIPs")
 			}
 		}
@@ -119,7 +119,7 @@ func (d *Interface) RemovePeer(peer wgtypes.PeerConfig) bool {
 		return false
 	}
 
-	if !eqIps(peer.AllowedIPs, p.AllowedIPs) {
+	if !IpsEqual(peer.AllowedIPs, p.AllowedIPs) {
 		return false
 	}
 
@@ -237,11 +237,11 @@ func initWgInterface(name string, ip net.IP) error {
 	return nil
 }
 
-// eqIps returns true if two array IPs are equal
+// IpsEqual returns true if two array IPs are equal
 //
 // each pair of IP must be exact same. We don't check
 // CIDR inclusive
-func eqIps(a, b []net.IPNet) bool {
+func IpsEqual(a, b []net.IPNet) bool {
 	eq := func(x, y net.IPNet) bool {
 		xo, xb := x.Mask.Size()
 		yo, yb := y.Mask.Size()

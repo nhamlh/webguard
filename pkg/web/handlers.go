@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/dustin/go-humanize"
+	// "github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/db"
@@ -39,18 +38,14 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 	var devices []db.Device
 	h.db.Select(&devices, "SELECT * FROM devices WHERE user_id=$1", user.Id)
 
-	var devStatus []map[string]string
+	var devStatus []map[string]interface{}
 	for _, dev := range devices {
-		id := dev.Id
-		name := dev.Name
-		peer, _ := h.wg.GetPeer(dev.PrivateKey.PublicKey())
-		lastSeen := humanize.Time(peer.LastHandshakeTime)
+		status, peer := dev.Status(*h.wg)
 
-		devStatus = append(devStatus, map[string]string{
-			"id":       strconv.Itoa(id),
-			"name":     name,
-			"pubkey":   dev.PrivateKey.PublicKey().String(),
-			"lastSeen": lastSeen,
+		devStatus = append(devStatus, map[string]interface{}{
+			"dev":  dev,
+			"stat": status.String(),
+			"peer": peer,
 		})
 	}
 
@@ -336,9 +331,9 @@ func (h *Handlers) DeviceInstall(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 		renderTemplate("device_install", templateData{
-			"user":   user,
+			"user":         user,
 			"download_url": fmt.Sprintf("%s?dl=1", r.URL.Path),
-			"qrcode": device.GenQRCode(h.wg)}, w)
+			"qrcode":       device.GenQRCode(h.wg)}, w)
 		return
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
