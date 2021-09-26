@@ -37,8 +37,22 @@ Start Webguard:
 
 # Configuration
 
-TBD
+After sucessfully build Webguard, you can run `genconf` subcommand to generate a default configuration file. You can edit this file then apply it to Webguard by `--config` flag, e.g:
+
+```sh
+ ./webguard genconf && ./webguard --config config.json start
+```
 
 # Docker
 
-TBD
+Webguard ships with pre-built docker container.
+Notice: Webguard container must be run with NET_ADMIN capability.
+
+```sh
+docker run --rm \
+    -p 8080:8080 \
+    --add-cap NET_ADMIN \
+    nhamlh/webguard:latest
+```
+
+This will start Webguard on port 8080
