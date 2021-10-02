@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 
 	"github.com/nhamlh/webguard/pkg/config"
 	models "github.com/nhamlh/webguard/pkg/db"
@@ -12,7 +11,6 @@ import (
 	"github.com/nhamlh/webguard/pkg/web"
 	"github.com/nhamlh/webguard/pkg/wg"
 	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 var startCmd = &cobra.Command{
@@ -40,27 +38,16 @@ var startCmd = &cobra.Command{
 			log.Fatal(fmt.Errorf("Cannot load Wireguard interface: %v", err))
 		}
 
-		var peers []models.Device
-		db.Select(&peers, "SELECT * FROM devices")
+		var devices []models.Device
+		db.Select(&devices, "SELECT * FROM devices")
 
-		for _, peer := range peers {
-			peerIP, err := wgInterface.AllocateIP(peer.Num)
+		for _, dev := range devices {
+			err := dev.AddTo(wgInterface)
 			if err != nil {
-				log.Println(fmt.Errorf("Cannot add peer %s: Failed to allocate IP from device number: %v", peer.PrivateKey.PublicKey().String(), err))
+				log.Println(fmt.Errorf("Cannot add peer %s: %v", dev.PrivateKey.PublicKey().String(), err))
 				break
 			}
 
-			peerCfg := wgtypes.PeerConfig{
-				PublicKey:         peer.PrivateKey.PublicKey(),
-				AllowedIPs:        []net.IPNet{peerIP},
-				ReplaceAllowedIPs: true,
-			}
-			if err = wgInterface.AddPeer(peerCfg); err != nil {
-				log.Println(fmt.Errorf("Cannot add peer %s: %v", peerCfg.PublicKey.String(), err))
-				break
-			} else {
-				// log.Println(fmt.Sprintf("Added peer %s", peer.PrivateKey.PublicKey()))
-			}
 		}
 
 		log.Println("Configure SSO provider:", cfg.Web.SSO.Provider)
