@@ -50,29 +50,24 @@ var startCmd = &cobra.Command{
 
 		}
 
-		log.Println("Configure SSO provider:", cfg.Web.SSO.Provider)
+		op := sso.Oauth2Provider{}
 
 		pc, err := buildProviderConfig(cfg.Web.SSO)
-		if err != nil {
-			log.Fatal(fmt.Errorf("Cannot configure SSO provider %s: %v", cfg.Web.SSO.Provider, err))
+		if err == nil {
+			redirectURL := fmt.Sprintf("%s://%s:%d/login/oauth/callback",
+				cfg.Web.Scheme,
+				cfg.Hostname,
+				cfg.Web.Port)
+
+			op = sso.NewOauth2Provider(
+				cfg.Web.SSO.ClientId,
+				cfg.Web.SSO.ClientSecret,
+				redirectURL,
+				pc)
+
 		}
 
-		redirectURL := fmt.Sprintf("%s://%s:%d/login/oauth/callback",
-			cfg.Web.Scheme,
-			cfg.Hostname,
-			cfg.Web.Port)
-
-		op, err := sso.NewOauth2Provider(
-			cfg.Web.SSO.ClientId,
-			cfg.Web.SSO.ClientSecret,
-			redirectURL,
-			pc)
-
-		if err != nil {
-			log.Fatal(fmt.Errorf("Cannot configure SSO provider: %v", err))
-		}
-
-		svc := web.NewServer(*db, *wgInterface, *op)
+		svc := web.NewServer(*db, *wgInterface, op)
 		svc.StartAt(cfg.Web.Address, cfg.Web.Port)
 	},
 }

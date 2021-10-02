@@ -19,7 +19,7 @@ type Oauth2Provider struct {
 	pc  *ProviderConfig
 }
 
-func NewOauth2Provider(clientId, clientSecret, redirectURL string, pc ProviderConfig) (*Oauth2Provider, error) {
+func NewOauth2Provider(clientId, clientSecret, redirectURL string, pc ProviderConfig) Oauth2Provider {
 	oc := oauth2.Config{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
@@ -28,10 +28,10 @@ func NewOauth2Provider(clientId, clientSecret, redirectURL string, pc ProviderCo
 		Scopes:       pc.scopes,
 	}
 
-	return &Oauth2Provider{
+	return Oauth2Provider{
 		cfg: &oc,
 		pc:  &pc,
-	}, nil
+	}
 }
 
 //TODO: Implement challenge verifier

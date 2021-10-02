@@ -61,9 +61,12 @@ func (s *Server) initRoutes() {
 	s.r.Group(func(r chi.Router) {
 		r.Get("/login", h.Login)
 		r.Post("/login", h.Login)
-		r.Get("/login/oauth", h.OauthLogin)
-		r.Get("/login/oauth/callback", h.OauthCallback)
 		r.Get("/logout", h.Logout)
+
+		if s.op != (sso.Oauth2Provider{}) {
+			r.Get("/login/oauth", h.OauthLogin)
+			r.Get("/login/oauth/callback", h.OauthCallback)
+		}
 	})
 
 	// require login
