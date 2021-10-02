@@ -10,7 +10,7 @@
         <div class="column has-background-light">
 
           <div>
-            <a class="button is-primary" href="/new_device">
+            <a class="button is-primary" href="/devices">
               <span class="icon">
                 <i class="fas fa-plus"></i>
               </span>

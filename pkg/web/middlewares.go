@@ -4,18 +4,20 @@ import (
 	"net/http"
 )
 
-type loginManager struct {
-	loginUrl string
-}
+// RequireLoginAt is a middleware which require user to be logged in otherwise
+// it redirects user to loginUrl
+func RequireLoginAt(loginUrl string) func(next http.Handler) http.Handler {
+	middleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, found := store.Get(r)
+			if !found {
+				http.Redirect(w, r, loginUrl, http.StatusFound)
+				return
+			}
 
-func (lm *loginManager) wrap(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, found := store.Get(r)
-		if !found {
-			http.Redirect(w, r, lm.loginUrl, http.StatusFound)
-			return
-		}
-
-		h(w, r)
+			next.ServeHTTP(w, r)
+		})
 	}
+
+	return middleware
 }

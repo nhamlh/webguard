@@ -8,7 +8,7 @@
       <div class="columns is-centered">
       <div class="column is-one-third has-background-light">
 
-        <form action="/new_device" method="POST">
+        <form action="/devices" method="POST">
           <div class="field">
             <label class="label">Name</label>
             <div class="control has-icons-left">

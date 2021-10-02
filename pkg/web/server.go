@@ -6,32 +6,51 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/sso"
 	wireguard "github.com/nhamlh/webguard/pkg/wg"
+	"net/http"
 )
 
 func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *chi.Mux {
-	router := chi.NewRouter()
-	router.Use(middleware.Logger)
-
-	lm := loginManager{
-		loginUrl: "/login",
-	}
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
 	h := NewHandlers(db, wgInt, p)
 
-	router.Get("/", lm.wrap(h.Index))
+	// session management
+	r.Group(func(r chi.Router) {
+		r.Get("/login", h.Login)
+		r.Post("/login", h.Login)
+		r.Get("/login/oauth", h.OauthLogin)
+		r.Get("/login/oauth/callback", h.OauthCallback)
+		r.Get("/logout", h.Logout)
+	})
 
-	// Working with devices
-	router.Get("/new_device", lm.wrap(h.DeviceAdd))
-	router.Post("/new_device", lm.wrap(h.DeviceAdd))
-	router.Get("/devices/{id}/install", lm.wrap(h.DeviceInstall))
-	router.Get("/devices/{id}/delete", lm.wrap(h.DeviceDelete))
+	// require login
+	r.Group(func(r chi.Router) {
+		r.Use(RequireLoginAt("/login"))
 
-	// Session management
-	router.Get("/login", h.Login)
-	router.Post("/login", h.Login)
-	router.Get("/login/oauth", h.OauthLogin)
-	router.Get("/login/oauth/callback", h.OauthCallback)
-	router.Get("/logout", h.Logout)
+		r.Get("/", h.Index)
 
-	return router
+		r.Route("/devices", func(r chi.Router) {
+			r.Get("/", h.DeviceAdd)
+			r.Post("/", h.DeviceAdd)
+			r.Get("/{id}/install", h.DeviceInstall)
+			r.Get("/{id}/delete", h.DeviceDelete)
+		})
+	})
+
+	// error pages
+	r.Group(func(r chi.Router) {
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate("error", templateData{
+				"errors": []string{"Route does not exist"}}, w)
+		})
+		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			renderTemplate("error", templateData{
+				"errors": []string{"Method is not valid"}}, w)
+		})
+	})
+
+	return r
 }
