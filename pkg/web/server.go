@@ -1,22 +1,64 @@
 package web
 
 import (
+	"net/http"
+
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
 	"github.com/nhamlh/webguard/pkg/sso"
 	wireguard "github.com/nhamlh/webguard/pkg/wg"
-	"net/http"
+	"log"
+	"time"
 )
 
-func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *chi.Mux {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+type Server struct {
+	r  chi.Router
+	db sqlx.DB
+	wg wireguard.Interface
+	op sso.Oauth2Provider
+}
 
-	h := NewHandlers(db, wgInt, p)
+func NewServer(db sqlx.DB, wg wireguard.Interface, op sso.Oauth2Provider) Server {
+
+	r := chi.NewRouter()
+	s := Server{
+		r:  r,
+		db: db,
+		wg: wg,
+		op: op,
+	}
+
+	s.initRoutes()
+
+	return s
+}
+
+func (s *Server) StartAt(host string, port int) {
+	listen := fmt.Sprintf("%s:%d", host, port)
+
+	srv := &http.Server{
+		Handler:      s.r,
+		Addr:         listen,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	log.Println("Web server is listening at", listen)
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Fatal(fmt.Errorf("Web server failed: %v", err))
+	}
+}
+
+func (s *Server) initRoutes() {
+	s.r.Use(middleware.Logger)
+
+	h := NewHandlers(&s.db, &s.wg, &s.op)
 
 	// session management
-	r.Group(func(r chi.Router) {
+	s.r.Group(func(r chi.Router) {
 		r.Get("/login", h.Login)
 		r.Post("/login", h.Login)
 		r.Get("/login/oauth", h.OauthLogin)
@@ -25,7 +67,7 @@ func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *
 	})
 
 	// require login
-	r.Group(func(r chi.Router) {
+	s.r.Group(func(r chi.Router) {
 		r.Use(RequireLoginAt("/login"))
 
 		r.Get("/", h.Index)
@@ -39,7 +81,7 @@ func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *
 	})
 
 	// error pages
-	r.Group(func(r chi.Router) {
+	s.r.Group(func(r chi.Router) {
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			renderTemplate("error", templateData{
@@ -51,6 +93,4 @@ func NewRouter(db *sqlx.DB, wgInt *wireguard.Interface, p *sso.Oauth2Provider) *
 				"errors": []string{"Method is not valid"}}, w)
 		})
 	})
-
-	return r
 }

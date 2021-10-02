@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
-	"time"
 
 	"github.com/nhamlh/webguard/pkg/config"
 	models "github.com/nhamlh/webguard/pkg/db"
@@ -87,22 +85,8 @@ var startCmd = &cobra.Command{
 			log.Fatal(fmt.Errorf("Cannot configure SSO provider: %v", err))
 		}
 
-		router := web.NewRouter(db, wgInterface, op)
-
-		srv := &http.Server{
-			Handler: router,
-			Addr:    fmt.Sprintf("%s:%d", cfg.Web.Address, cfg.Web.Port),
-			// Good practice: enforce timeouts for servers you create!
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-		}
-
-		log.Println(fmt.Sprintf("Web server is listening at %s:%d", cfg.Web.Address, cfg.Web.Port))
-		err = srv.ListenAndServe()
-		if err != nil {
-			log.Fatal(fmt.Errorf("Web server failed: %v", err))
-		}
-
+		svc := web.NewServer(*db, *wgInterface, *op)
+		svc.StartAt(cfg.Web.Address, cfg.Web.Port)
 	},
 }
 
