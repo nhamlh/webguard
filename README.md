@@ -40,7 +40,7 @@ Start Webguard:
 After sucessfully build Webguard, you can run `genconf` subcommand to generate a default configuration file. You can edit this file then apply it to Webguard by `--config` flag, e.g:
 
 ```sh
- ./webguard genconf && ./webguard --config config.json start
+ ./webguard genconf > config.json && ./webguard --config config.json start
 ```
 
 # Docker
