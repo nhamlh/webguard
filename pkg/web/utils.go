@@ -3,7 +3,9 @@ package web
 import (
 	"sort"
 
+	"crypto/rand"
 	"github.com/nhamlh/webguard/pkg/db"
+	"math/big"
 )
 
 // getAvailNum returns a number to which will be used allocate
@@ -29,3 +31,17 @@ func getAvailNum(devices []db.Device) int {
 	return num + 1
 }
 
+func genRandomString(length int) string {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+
+	ret := make([]byte, length)
+	for i := 0; i < length; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			return ""
+		}
+		ret[i] = letters[num.Int64()]
+	}
+
+	return string(ret)
+}

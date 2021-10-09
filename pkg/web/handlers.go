@@ -339,3 +339,63 @@ func (h *Handlers) DeviceInstall(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
+
+func (h *Handlers) ChangePasswd(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r)
+	u := session.Values["user"].(db.User)
+
+	switch r.Method {
+	case http.MethodGet:
+		renderTemplate("change_password", templateData{
+			"user": u}, w)
+	case http.MethodPost:
+		current := r.FormValue("current_password")
+		new := r.FormValue("new_password")
+
+		if current == new {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("change_password", templateData{
+				"user":   u,
+				"errors": []string{"New password must differ from your current password"}}, w)
+			return
+		}
+
+		var user db.User
+		h.db.Get(&user, "SELECT * FROM users WHERE id=$1", u.Id)
+
+		if m := user.PasswdMatched([]byte(current)); !m {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("change_password", templateData{
+				"user":   user,
+				"errors": []string{"Current password does not match"}}, w)
+			return
+		}
+
+		if err := user.NewPasswd(new); err != nil {
+			log.Println(err.Error())
+
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("change_password", templateData{
+				"user":   user,
+				"errors": []string{"Cannot update your password"}}, w)
+			return
+		}
+
+		if err := user.Save(*h.db); err != nil {
+			log.Println(err.Error())
+
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate("change_password", templateData{
+				"user":   user,
+				"errors": []string{"Cannot update your password"}}, w)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		renderTemplate("change_password", templateData{
+			"user": user,
+			"msg":  []string{"Your password has changed!"}}, w)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}

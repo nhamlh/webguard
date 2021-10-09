@@ -81,6 +81,9 @@ func (s *Server) initRoutes() {
 			r.Get("/{id}/install", h.DeviceInstall)
 			r.Get("/{id}/delete", h.DeviceDelete)
 		})
+
+		r.Get("/change_password", h.ChangePasswd)
+		r.Post("/change_password", h.ChangePasswd)
 	})
 
 	// error pages
