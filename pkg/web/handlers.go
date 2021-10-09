@@ -271,7 +271,7 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 
 		if device == (db.Device{}) {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("error", templateData{
+			renderTemplate("notif", templateData{
 				"user":   user,
 				"errors": []string{"Cannot delete such device [101]"}}, w)
 			return
@@ -279,7 +279,7 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 
 		if err := device.RemoveFrom(h.wg); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("error", templateData{
+			renderTemplate("notif", templateData{
 				"user":   user,
 				"errors": []string{"Cannot delete such device [102]"}}, w)
 			return
@@ -287,7 +287,7 @@ func (h *Handlers) DeviceDelete(w http.ResponseWriter, r *http.Request) {
 
 		if _, err := h.db.Exec("DELETE FROM devices WHERE id=$1", id); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("error", templateData{
+			renderTemplate("notif", templateData{
 				"user":   user,
 				"errors": []string{"Cannot delete such device [103]"}}, w)
 			return
@@ -312,7 +312,7 @@ func (h *Handlers) DeviceInstall(w http.ResponseWriter, r *http.Request) {
 
 		if device == (db.Device{}) {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate("error", templateData{
+			renderTemplate("notif", templateData{
 				"user":   user,
 				"errors": []string{"Cannot load such device"}}, w)
 			return
@@ -392,7 +392,7 @@ func (h *Handlers) ChangePasswd(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		renderTemplate("change_password", templateData{
+		renderTemplate("notif", templateData{
 			"user": user,
 			"msg":  []string{"Your password has changed!"}}, w)
 	default:

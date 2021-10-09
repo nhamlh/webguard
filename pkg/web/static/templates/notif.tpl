@@ -1,9 +1,10 @@
-<!--General error page-->
+<!--General notification page-->
 <html>
   {{ template "header" . }}
   <body>
     <div class="container">
       {{ template "display_errors" . }}
+      {{ template "display_msg" . }}
 
       <section class="section">
       <div class="columns is-centered">
