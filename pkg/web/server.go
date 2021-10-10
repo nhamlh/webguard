@@ -1,16 +1,20 @@
 package web
 
 import (
+	"database/sql"
 	"net/http"
 
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
+	"github.com/nhamlh/webguard/pkg/db"
 	"github.com/nhamlh/webguard/pkg/sso"
 	wireguard "github.com/nhamlh/webguard/pkg/wg"
-	"log"
-	"time"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Server struct {
@@ -36,6 +40,20 @@ func NewServer(db sqlx.DB, wg wireguard.Interface, op sso.Oauth2Provider) Server
 }
 
 func (s *Server) StartAt(host string, port int) {
+	if s.isFirstStart() {
+		passwd := genRandomString(16)
+		admin := s.newAdminWithPasswd(passwd)
+		if err := admin.Save(s.db); err != nil {
+			log.Fatal(fmt.Errorf("Cannot generate admin user: %v", err))
+		}
+
+		log.Println("This is the first time Webguard is started. Generating first administrator...")
+		log.Println("...")
+		log.Println("Username: admin")
+		log.Println("Password:", passwd)
+		log.Println("...")
+	}
+
 	listen := fmt.Sprintf("%s:%d", host, port)
 
 	srv := &http.Server{
@@ -99,4 +117,29 @@ func (s *Server) initRoutes() {
 				"errors": []string{"Method is not valid"}}, w)
 		})
 	})
+}
+
+// isFirstStart returns true if this is the first time
+// this server is started
+func (s *Server) isFirstStart() bool {
+	if len(db.AllUsers(s.db)) == 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (s *Server) newAdminWithPasswd(passwd string) db.User {
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
+	if err != nil {
+		return db.User{}
+	}
+
+	return db.User{
+		Email:     "admin",
+		Password:  sql.NullString{String: string(hashedPass), Valid: true},
+		AuthType:  db.StaticAuth,
+		IsAmdin:   true,
+		LastLogin: db.Time{},
+	}
 }

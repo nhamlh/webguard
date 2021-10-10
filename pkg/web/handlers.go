@@ -12,7 +12,6 @@ import (
 	"github.com/nhamlh/webguard/pkg/session"
 	"github.com/nhamlh/webguard/pkg/sso"
 	"github.com/nhamlh/webguard/pkg/wg"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var store = session.NewSessionStore()
@@ -80,26 +79,25 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		var user db.User
-		h.db.Get(&user, "SELECT * FROM users WHERE email=$1", email)
-
-		err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
-
-		samePassword := true
-		if err != nil {
-			samePassword = false
-		}
-
-		if user == (db.User{}) || !samePassword {
+		user, found := db.GetUserByEmail(email, *h.db)
+		if !found || !user.PasswdMatched([]byte(password)) {
 			w.WriteHeader(http.StatusUnauthorized)
 			renderTemplate("login", templateData{"errors": []string{"Invalid email or password"}}, w)
 			return
 		}
 
+		isFirstLogin := user.LastLogin.IsZero()
+		user.RecordLogin()
+		user.Save(*h.db)
+
 		session := store.New()
 		session.Values["user"] = user
-
 		store.Save(*session, w)
+
+		if isFirstLogin {
+			http.Redirect(w, r, "/change_password", http.StatusFound)
+			return
+		}
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	default:
