@@ -17,12 +17,12 @@ import (
 var store = session.NewSessionStore()
 
 type Handlers struct {
-	db *sqlx.DB
-	wg *wg.Interface
-	op *sso.Oauth2Provider
+	db sqlx.DB
+	wg wg.Interface
+	op sso.Oauth2Provider
 }
 
-func NewHandlers(db *sqlx.DB, wgInt *wg.Interface, sp *sso.Oauth2Provider) Handlers {
+func NewHandlers(db sqlx.DB, wgInt wg.Interface, sp sso.Oauth2Provider) Handlers {
 	return Handlers{db: db, wg: wgInt, op: sp}
 }
 
@@ -39,7 +39,7 @@ func (h *Handlers) Index(w http.ResponseWriter, r *http.Request) {
 
 	var devStatus []map[string]interface{}
 	for _, dev := range devices {
-		status, peer := dev.Status(*h.wg)
+		status, peer := dev.Status(h.wg)
 
 		devStatus = append(devStatus, map[string]interface{}{
 			"dev":  dev,
@@ -79,7 +79,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		user, found := db.GetUserByEmail(email, *h.db)
+		user, found := db.GetUserByEmail(email, h.db)
 		if !found || !user.PasswdMatched([]byte(password)) {
 			w.WriteHeader(http.StatusUnauthorized)
 			renderTemplate("login", templateData{"errors": []string{"Invalid email or password"}}, w)
@@ -88,7 +88,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 
 		isFirstLogin := user.LastLogin.IsZero()
 		user.RecordLogin()
-		user.Save(*h.db)
+		user.Save(h.db)
 
 		session := store.New()
 		session.Values["user"] = user
@@ -232,7 +232,7 @@ func (h *Handlers) DeviceAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := dev.Save(*h.db); err != nil {
+		if err := dev.Save(h.db); err != nil {
 			log.Println(fmt.Errorf("Cannot save device %s to db: %v", dev.PrivateKey.PublicKey(), err))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate("device", templateData{
@@ -379,7 +379,7 @@ func (h *Handlers) ChangePasswd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := user.Save(*h.db); err != nil {
+		if err := user.Save(h.db); err != nil {
 			log.Println(err.Error())
 
 			w.WriteHeader(http.StatusBadRequest)

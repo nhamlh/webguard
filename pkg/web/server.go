@@ -73,7 +73,7 @@ func (s *Server) StartAt(host string, port int) {
 func (s *Server) initRoutes() {
 	s.r.Use(middleware.Logger)
 
-	h := NewHandlers(&s.db, &s.wg, &s.op)
+	h := NewHandlers(s.db, s.wg, s.op)
 
 	// session management
 	s.r.Group(func(r chi.Router) {

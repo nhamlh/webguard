@@ -42,7 +42,7 @@ var startCmd = &cobra.Command{
 		db.Select(&devices, "SELECT * FROM devices")
 
 		for _, dev := range devices {
-			err := dev.AddTo(wgInterface)
+			err := dev.AddTo(*wgInterface)
 			if err != nil {
 				log.Println(fmt.Errorf("Cannot add peer %s: %v", dev.PrivateKey.PublicKey().String(), err))
 				break

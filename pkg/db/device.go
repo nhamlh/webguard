@@ -62,14 +62,14 @@ values ($1,$2,$3,$4,$5)
 	return err
 }
 
-func (d *Device) AddTo(wgInf *wg.Interface) error {
+func (d *Device) AddTo(wgInf wg.Interface) error {
 
-	peerCfg, err := d.peerConfig(*wgInf)
+	peerCfg, err := d.peerConfig(wgInf)
 	if err != nil {
 		return fmt.Errorf("Cannot add device to wireguard interface: %v", err)
 	}
 
-	err = wgInf.AddPeer(*peerCfg)
+	err = wgInf.AddPeer(peerCfg)
 	if err != nil {
 		return fmt.Errorf("Cannot add advice to wireguard interface: %v", err)
 	}
@@ -77,7 +77,7 @@ func (d *Device) AddTo(wgInf *wg.Interface) error {
 	return nil
 }
 
-func (d *Device) IsAddedTo(wgInf *wg.Interface) bool {
+func (d *Device) IsAddedTo(wgInf wg.Interface) bool {
 	if _, found := wgInf.GetPeer(d.PrivateKey.PublicKey()); found {
 		return true
 	}
@@ -85,17 +85,17 @@ func (d *Device) IsAddedTo(wgInf *wg.Interface) bool {
 	return false
 }
 
-func (d *Device) RemoveFrom(wgInf *wg.Interface) error {
+func (d *Device) RemoveFrom(wgInf wg.Interface) error {
 	if _, found := wgInf.GetPeer(d.PrivateKey.PublicKey()); !found {
 		return errors.New("Peer not found")
 	}
 
-	peerCfg, err := d.peerConfig(*wgInf)
+	peerCfg, err := d.peerConfig(wgInf)
 	if err != nil {
 		return fmt.Errorf("Cannot remove device from wireguard interface: %v", err)
 	}
 
-	isRemoved := wgInf.RemovePeer(*peerCfg)
+	isRemoved := wgInf.RemovePeer(peerCfg)
 	if !isRemoved {
 		return fmt.Errorf("Cannot remove device from wireguard interface: %v", err)
 	}
@@ -104,7 +104,7 @@ func (d *Device) RemoveFrom(wgInf *wg.Interface) error {
 }
 
 // GenQRCode returns base64 encoded qrcode of client config of this device
-func (d *Device) GenQRCode(wgInf *wg.Interface) string {
+func (d *Device) GenQRCode(wgInf wg.Interface) string {
 	png, err := qrcode.Encode(d.GenClientConfig(wgInf), qrcode.Medium, 256)
 	if err != nil {
 		return ""
@@ -113,7 +113,7 @@ func (d *Device) GenQRCode(wgInf *wg.Interface) string {
 	return base64.StdEncoding.EncodeToString(png)
 }
 
-func (d *Device) GenClientConfig(wgInf *wg.Interface) string {
+func (d *Device) GenClientConfig(wgInf wg.Interface) string {
 	t, _ := template.New("clientConfig").Parse(`
 [Interface]
 PrivateKey = {{ .PrivateKey }}
@@ -145,13 +145,13 @@ AllowedIPs = {{ .PeerRoutes }}
 	return clientConfig.String()
 }
 
-func (d *Device) peerConfig(wgInf wg.Interface) (*wgtypes.PeerConfig, error) {
+func (d *Device) peerConfig(wgInf wg.Interface) (wgtypes.PeerConfig, error) {
 	peerIp, err := wgInf.AllocateIP(d.Num)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot generate peer config: %v", err)
+		return wgtypes.PeerConfig{}, fmt.Errorf("Cannot generate peer config: %v", err)
 	}
 
-	return &wgtypes.PeerConfig{
+	return wgtypes.PeerConfig{
 		PublicKey:         d.PrivateKey.PublicKey(),
 		AllowedIPs:        []net.IPNet{peerIp},
 		ReplaceAllowedIPs: false,
