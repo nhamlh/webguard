@@ -1,0 +1,33 @@
+---
+name: build and publish docker image
+
+on:
+  push:
+    branches: ["master"]
+    tags: ["v\.[0-9]+\.[0-9]+\.[0-9]+"]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to Github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags:
+            - ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+            - ${{ env.REGISTRY }}/${{ github.repository }}:latest
