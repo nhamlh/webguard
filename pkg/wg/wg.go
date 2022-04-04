@@ -34,6 +34,7 @@ func LoadInterface(cfg config.WireguardConfig) (*Interface, error) {
 		return nil, errors.New("Not enough allocatable IPs for wireguard to run. It needs at least 2 IPs")
 	}
 
+	fmt.Println("Initilizing wireguard link...")
 	err = initWgInterface(cfg.Name, ips[0])
 	if err != nil {
 		return nil, fmt.Errorf("Cannot initialize wireguard link: %v", err)
@@ -58,6 +59,7 @@ func LoadInterface(cfg config.WireguardConfig) (*Interface, error) {
 		ListenPort: &cfg.ListenPort,
 	}
 
+	fmt.Println("Configuring wireguard device...")
 	err = client.ConfigureDevice(cfg.Name, wgCfg)
 	if err != nil {
 		return nil, err

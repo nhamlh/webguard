@@ -33,6 +33,7 @@ var startCmd = &cobra.Command{
 
 		db := models.InitDb(cfg.DbPath)
 
+		fmt.Println("Loading wireguard interface...")
 		wgInterface, err := wg.LoadInterface(cfg.Wireguard)
 		if err != nil {
 			log.Fatal(fmt.Errorf("Cannot load Wireguard interface: %v", err))
@@ -41,6 +42,7 @@ var startCmd = &cobra.Command{
 		var devices []models.Device
 		db.Select(&devices, "SELECT * FROM devices")
 
+		fmt.Println("Adding peers to wireguard interface...")
 		for _, dev := range devices {
 			err := dev.AddTo(*wgInterface)
 			if err != nil {
@@ -52,6 +54,7 @@ var startCmd = &cobra.Command{
 
 		op := sso.Oauth2Provider{}
 
+		fmt.Println("Initializing SSO provider...")
 		pc, err := buildProviderConfig(cfg.Web.SSO)
 		if err == nil {
 			redirectURL := fmt.Sprintf("%s://%s:%d/login/oauth/callback",
@@ -67,6 +70,7 @@ var startCmd = &cobra.Command{
 
 		}
 
+		fmt.Println("Starting Webguard server...")
 		svc := web.NewServer(*db, *wgInterface, op)
 		svc.StartAt(cfg.Web.Address, cfg.Web.Port)
 	},
