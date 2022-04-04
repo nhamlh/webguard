@@ -12,7 +12,7 @@ var (
 		Hostname: "localhost",
 		Web: WebConfig{
 			Scheme:  "http",
-			Address: "127.0.0.1",
+			Address: "0.0.0.0",
 			Port:    8080,
 		},
 		Wireguard: WireguardConfig{
