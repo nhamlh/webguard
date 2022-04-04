@@ -51,8 +51,8 @@ Notice: Webguard container must be run with NET_ADMIN capability.
 ```sh
 docker run --rm \
     -p 8080:8080 \
-    --add-cap NET_ADMIN \
-    nhamlh/webguard:latest
+    --cap-add NET_ADMIN \
+    docker pull ghcr.io/nhamlh/webguard:latest
 ```
 
 This will start Webguard on port 8080
