@@ -28,6 +28,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags:
-            - ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
-            - ${{ env.REGISTRY }}/${{ github.repository }}:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository }}:latest
